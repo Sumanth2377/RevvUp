@@ -1,5 +1,6 @@
 export type ServiceRecord = {
   id: string;
+  maintenanceTaskId: string; // Added to link back to the task
   date: string;
   mileage: number;
   task: string;

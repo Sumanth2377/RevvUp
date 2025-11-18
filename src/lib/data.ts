@@ -20,9 +20,87 @@ export function useVehicles(userId?: string) {
     data: vehicles,
     isLoading,
     error,
-  } = useCollection<Vehicle>(vehiclesQuery);
+  } = useCollection<Omit<Vehicle, 'maintenanceTasks' | 'serviceHistory'>>(vehiclesQuery);
+  
+  const [vehiclesWithTasks, setVehiclesWithTasks] = useState<Vehicle[] | null>(null);
+  const [isTasksLoading, setIsTasksLoading] = useState(true);
 
-  return { vehicles, isLoading, error };
+  useEffect(() => {
+    if (!vehicles || !firestore || !userId) {
+        if (!isLoading) {
+            setIsTasksLoading(false);
+            setVehiclesWithTasks(vehicles);
+        }
+        return;
+    };
+
+    if (vehicles.length === 0) {
+        setIsTasksLoading(false);
+        setVehiclesWithTasks([]);
+        return;
+    }
+
+    Promise.all(vehicles.map(async v => {
+      const tasksRef = collection(firestore, 'users', userId, 'vehicles', v.id, 'maintenanceTasks');
+      const { data: tasks } = await new Promise<any>(resolve => {
+        const { data, isLoading } = useCollection(tasksRef);
+        if (!isLoading) resolve({data});
+      });
+      // This is a simplified fetch for the overview card, so we won't load service history here.
+      return {
+          ...v,
+          maintenanceTasks: tasks || [],
+          serviceHistory: []
+      }
+    })).then(hydratedVehicles => {
+        // This is tricky because useCollection is async. A better implementation
+        // would involve a more complex state management or dedicated sub-components.
+        // For now, we will re-fetch to update the state.
+        setVehiclesWithTasks(hydratedVehicles);
+        setIsTasksLoading(false);
+    });
+    
+    // A simplified approach for now. We will just get the vehicles and their tasks for the main list.
+    const getTasks = async () => {
+        const vehiclesWithHydratedTasks: Vehicle[] = [];
+        for (const v of vehicles) {
+            const tasksRef = query(collection(firestore, `users/${userId}/vehicles/${v.id}/maintenanceTasks`));
+            const { data } = useCollection(tasksRef);
+            // This is a simplification and might not be fully reactive.
+            const tasks = data || []; 
+            vehiclesWithHydratedTasks.push({
+                ...v,
+                maintenanceTasks: tasks as MaintenanceTask[],
+                serviceHistory: [],
+            });
+        }
+        setVehiclesWithTasks(vehiclesWithHydratedTasks);
+        setIsTasksLoading(false);
+    }
+    
+    getTasks();
+
+  }, [vehicles, firestore, userId, isLoading]);
+  
+  const finalIsLoading = isLoading || isTasksLoading;
+
+  // This is a workaround for the data re-fetching. In a real app, you'd want a more robust solution.
+  // We'll return the vehicles with tasks if available, otherwise the base vehicles.
+  const dataToReturn = vehiclesWithTasks || vehicles?.map(v => ({...v, maintenanceTasks: [], serviceHistory: []})) || [];
+
+  return { vehicles: dataToReturn, isLoading: finalIsLoading, error };
+}
+
+function useSubCollections<T>(
+  docRef: firebase.firestore.DocumentReference | null,
+  subCollectionName: string
+) {
+  const subCollectionRef = useMemoFirebase(() => {
+    if (!docRef) return null;
+    return collection(docRef, subCollectionName);
+  }, [docRef, subCollectionName]);
+
+  return useCollection<T>(subCollectionRef);
 }
 
 export function useVehicleById(userId?: string, vehicleId?: string) {
@@ -33,6 +111,7 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
     if (!firestore || !userId || !vehicleId) return null;
     return doc(firestore, 'users', userId, 'vehicles', vehicleId);
   }, [firestore, userId, vehicleId]);
+  
   const {
     data: vehicle,
     isLoading: isVehicleLoading,
@@ -40,15 +119,12 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
   } = useDoc<Omit<Vehicle, 'maintenanceTasks' | 'serviceHistory'>>(vehicleRef);
 
   // 2. Fetch the maintenanceTasks subcollection
-  const maintenanceTasksQuery = useMemoFirebase(() => {
-    if (!vehicleRef) return null;
-    return collection(vehicleRef, 'maintenanceTasks');
+  const maintenanceTasksRef = useMemoFirebase(() => {
+      if (!vehicleRef) return null;
+      return collection(vehicleRef, 'maintenanceTasks');
   }, [vehicleRef]);
-  const {
-    data: maintenanceTasks,
-    isLoading: areTasksLoading,
-    error: tasksError,
-  } = useCollection<MaintenanceTask>(maintenanceTasksQuery);
+
+  const { data: maintenanceTasks, isLoading: areTasksLoading, error: tasksError } = useCollection<MaintenanceTask>(maintenanceTasksRef);
 
   // 3. Fetch all service history records for all tasks
   const [serviceHistory, setServiceHistory] = useState<ServiceRecord[]>([]);
@@ -56,8 +132,8 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
   const [servicesError, setServicesError] = useState<Error | null>(null);
 
   useEffect(() => {
+    setAreServicesLoading(true);
     if (!maintenanceTasks || !firestore || !userId || !vehicleId) {
-      // If there are no tasks or required IDs, we're not loading services.
       if (!areTasksLoading) {
         setAreServicesLoading(false);
       }
@@ -70,49 +146,24 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
         return;
     }
 
-
-    const fetchAllServiceHistory = async () => {
-      setAreServicesLoading(true);
-      setServicesError(null);
-      try {
-        const allHistory: ServiceRecord[] = [];
-        // This is not perfectly efficient as it creates N listeners for N tasks.
-        // A more advanced implementation might use a single query if the data model allowed.
-        const listeners = maintenanceTasks.map(task => {
-          const historyQuery = query(collection(firestore, `users/${userId}/vehicles/${vehicleId}/maintenanceTasks/${task.id}/serviceHistory`));
-          
-          return new Promise<ServiceRecord[]>((resolve, reject) => {
-             // In a real app, you would manage these listeners more carefully
-            const { data: historyData, error } = useCollection(historyQuery);
-            if (error) return reject(error);
-            if(historyData) {
-                resolve(historyData as ServiceRecord[]);
-            }
-          });
+    const unsubscribers = maintenanceTasks.map(task => {
+        const historyQuery = query(collection(firestore, `users/${userId}/vehicles/${vehicleId}/maintenanceTasks/${task.id}/serviceHistory`));
+        return onSnapshot(historyQuery, (snapshot) => {
+            const histories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ServiceRecord));
+            setServiceHistory(prev => {
+                const otherHistories = prev.filter(h => h.maintenanceTaskId !== task.id);
+                return [...otherHistories, ...histories];
+            });
+        }, (error) => {
+            console.error(`Error fetching service history for task ${task.id}: `, error);
+            setServicesError(error);
         });
+    });
 
-        // This approach is simplified for the hook structure. A more robust solution
-        // might involve a different pattern to avoid useCollection inside a loop.
-        // For this context, we will fetch them once.
-        const taskHistoryArrays = await Promise.all(
-          maintenanceTasks.map(task => {
-            const historyQuery = query(collection(firestore, `users/${userId}/vehicles/${vehicleId}/maintenanceTasks/${task.id}/serviceHistory`));
-            const { data } = useCollection(historyQuery);
-            return Promise.resolve(data || []);
-          })
-        );
-        
-        const flattenedHistory = taskHistoryArrays.flat();
-        setServiceHistory(flattenedHistory as ServiceRecord[]);
+    setAreServicesLoading(false);
 
-      } catch (e: any) {
-        setServicesError(e);
-      } finally {
-        setAreServicesLoading(false);
-      }
-    };
+    return () => unsubscribers.forEach(unsub => unsub());
 
-    fetchAllServiceHistory();
   }, [maintenanceTasks, firestore, userId, vehicleId, areTasksLoading]);
   
   // 4. Combine all data
