@@ -153,7 +153,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <Logo className="h-8 w-8 text-primary" />
-              <span className="font-headline text-xl">AutoMind</span>
+              <span className="font-headline text-xl">Mech.io</span>
             </Link>
           </div>
           <div className="flex-1 py-4">
@@ -178,7 +178,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <div className="flex h-14 items-center mb-4 border-b">
                  <Link href="/" className="flex items-center gap-2 font-semibold">
                     <Logo className="h-8 w-8 text-primary" />
-                    <span className="font-headline text-xl">AutoMind</span>
+                    <span className="font-headline text-xl">Mech.io</span>
                   </Link>
               </div>
               <SidebarNav />

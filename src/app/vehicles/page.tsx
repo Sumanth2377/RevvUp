@@ -7,8 +7,9 @@ import { PageHeader } from '@/components/page-header';
 import { VehicleCard } from '@/components/vehicle-card';
 import { PlusCircle } from 'lucide-react';
 import Loading from '../loading';
-import { useRouter } from 'next/navigation';
+import { useRouter, redirect } from 'next/navigation';
 import { useEffect } from 'react';
+import Link from 'next/link';
 
 export default function MyVehiclesPage() {
   const { user, isUserLoading } = useUser();
@@ -17,9 +18,9 @@ export default function MyVehiclesPage() {
 
   useEffect(() => {
     if (!isUserLoading && !user) {
-      router.push('/login');
+      redirect('/login');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading]);
 
   if (isUserLoading || isVehiclesLoading) {
     return <Loading />;
@@ -31,9 +32,11 @@ export default function MyVehiclesPage() {
         title="My Vehicles"
         description="Manage your vehicles and their maintenance schedules."
       >
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Vehicle
+        <Button asChild>
+          <Link href="/vehicles/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Vehicle
+          </Link>
         </Button>
       </PageHeader>
       {vehicles && vehicles.length > 0 ? (
@@ -51,9 +54,12 @@ export default function MyVehiclesPage() {
             <p className="text-sm text-muted-foreground">
               Get started by adding your first vehicle.
             </p>
-            <Button className="mt-4">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Vehicle</Button>
+            <Button className="mt-4" asChild>
+              <Link href="/vehicles/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Vehicle
+              </Link>
+            </Button>
           </div>
         </div>
       )}
