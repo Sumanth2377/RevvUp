@@ -4,7 +4,6 @@ import {
   suggestMaintenanceSchedule,
   type SuggestMaintenanceScheduleInput,
 } from '@/ai/flows/intelligent-maintenance-schedule';
-import { generateVehicleImage } from '@/ai/flows/vehicle-image-generator';
 import { z } from 'zod';
 
 const maintenanceSchema = z.object({
@@ -49,34 +48,4 @@ export async function suggestMaintenanceScheduleAction(
       error: e.message || 'An unknown error occurred.',
     };
   }
-}
-
-
-const imageGenSchema = z.object({
-    make: z.string(),
-    model: z.string(),
-    year: z.coerce.number(),
-});
-
-type ImageGenState = {
-    imageUrl?: string;
-    imageHint?: string;
-    error?: string;
-}
-
-export async function generateVehicleImageAction(prevState: ImageGenState, formData: FormData) : Promise<ImageGenState> {
-    const parsed = imageGenSchema.safeParse(Object.fromEntries(formData.entries()));
-    if (!parsed.success) {
-        return { error: 'Invalid input for image generation.' };
-    }
-    
-    try {
-        const result = await generateVehicleImage(parsed.data);
-        return {
-            imageUrl: result.imageUrl,
-            imageHint: result.imageHint,
-        };
-    } catch(e: any) {
-        return { error: e.message || 'Failed to generate image.' };
-    }
 }
