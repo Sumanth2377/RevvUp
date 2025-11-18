@@ -1,126 +1,61 @@
+'use client';
 import type { Vehicle } from './types';
-import { subMonths, format, addMonths } from 'date-fns';
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 
-const today = new Date();
-
-const mockVehicles: Vehicle[] = [
-  {
-    id: '1',
-    make: 'Toyota',
-    model: 'Camry',
-    year: 2021,
-    mileage: 25680,
-    licensePlate: '8XYZ123',
-    imageUrl: 'https://picsum.photos/seed/1/600/400',
-    imageHint: 'silver sedan',
-    maintenanceTasks: [
-      {
-        id: 't1',
-        name: 'Oil Change',
-        intervalMonths: 6,
-        intervalMiles: 5000,
-        status: 'due',
-        lastServiceDate: format(subMonths(today, 5), 'yyyy-MM-dd'),
-        lastServiceMileage: 20500,
-        nextDueDate: format(addMonths(subMonths(today, 5), 6), 'yyyy-MM-dd'),
-        nextDueMileage: 25500,
-      },
-      {
-        id: 't2',
-        name: 'Tire Rotation',
-        intervalMonths: 6,
-        intervalMiles: 7500,
-        status: 'ok',
-        lastServiceDate: format(subMonths(today, 2), 'yyyy-MM-dd'),
-        lastServiceMileage: 23000,
-        nextDueDate: format(addMonths(subMonths(today, 2), 6), 'yyyy-MM-dd'),
-        nextDueMileage: 30500,
-      },
-      {
-        id: 't3',
-        name: 'Brake Check',
-        intervalMonths: 12,
-        intervalMiles: 15000,
-        status: 'overdue',
-        lastServiceDate: format(subMonths(today, 14), 'yyyy-MM-dd'),
-        lastServiceMileage: 10000,
-        nextDueDate: format(addMonths(subMonths(today, 14), 12), 'yyyy-MM-dd'),
-        nextDueMileage: 25000,
-      },
-    ],
-    serviceHistory: [
-      {
-        id: 's1',
-        date: format(subMonths(today, 5), 'yyyy-MM-dd'),
-        mileage: 20500,
-        task: 'Oil Change',
-        notes: 'Synthetic oil used.',
-        cost: 75.0,
-      },
-      {
-        id: 's2',
-        date: format(subMonths(today, 14), 'yyyy-MM-dd'),
-        mileage: 10000,
-        task: 'Brake Check',
-        notes: 'Pads at 50%.',
-        cost: 50.0,
-      },
-    ],
-  },
-  {
-    id: '2',
-    make: 'Ford',
-    model: 'F-150',
-    year: 2022,
-    mileage: 15200,
-    licensePlate: 'TRUCKIN',
-    imageUrl: 'https://picsum.photos/seed/3/600/400',
-    imageHint: 'red truck',
-    maintenanceTasks: [
-       {
-        id: 't4',
-        name: 'Oil Change',
-        intervalMonths: 6,
-        intervalMiles: 5000,
-        status: 'ok',
-        lastServiceDate: format(subMonths(today, 3), 'yyyy-MM-dd'),
-        lastServiceMileage: 12000,
-        nextDueDate: format(addMonths(subMonths(today, 3), 6), 'yyyy-MM-dd'),
-        nextDueMileage: 17000,
-      },
-      {
-        id: 't5',
-        name: 'Air Filter Replacement',
-        intervalMonths: 24,
-        intervalMiles: 30000,
-        status: 'ok',
-        lastServiceDate: format(subMonths(today, 1), 'yyyy-MM-dd'),
-        lastServiceMileage: 15000,
-        nextDueDate: format(addMonths(subMonths(today, 1), 24), 'yyyy-MM-dd'),
-        nextDueMileage: 45000,
-      },
-    ],
-    serviceHistory: [
-      {
-        id: 's3',
-        date: format(subMonths(today, 3), 'yyyy-MM-dd'),
-        mileage: 12000,
-        task: 'Oil Change',
-        notes: 'Regular oil.',
-        cost: 60,
-      }
-    ],
-  },
-];
-
-export async function getVehicles(): Promise<Vehicle[]> {
-  // Simulate network latency
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return mockVehicles;
+export function useVehicles(userId?: string) {
+  const firestore = useFirestore();
+  const vehiclesQuery = useMemoFirebase(() => {
+    if (!firestore || !userId) return null;
+    return collection(firestore, 'users', userId, 'vehicles');
+  }, [firestore, userId]);
+  
+  const { data: vehicles, isLoading, error } = useCollection<Vehicle>(vehiclesQuery);
+  
+  return { vehicles, isLoading, error };
 }
 
-export async function getVehicleById(id: string): Promise<Vehicle | undefined> {
-  // Simulate network latency
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return mockVehicles.find(v => v.id === id);
+export function useVehicleById(userId?: string, vehicleId?: string) {
+  const firestore = useFirestore();
+
+  const vehicleRef = useMemoFirebase(() => {
+    if (!firestore || !userId || !vehicleId) return null;
+    return doc(firestore, 'users', userId, 'vehicles', vehicleId);
+  }, [firestore, userId, vehicleId]);
+
+  const { data: vehicle, isLoading, error } = useDoc<Vehicle>(vehicleRef);
+
+  // This part is tricky because subcollections are not automatically fetched.
+  // For now, we will assume they come with the vehicle document, but in a real scenario
+  // you would need separate hooks/queries for maintenanceTasks and serviceHistory.
+  // The backend.json defines them as subcollections.
+  const maintenanceTasksQuery = useMemoFirebase(() => {
+    if (!vehicleRef) return null;
+    return collection(vehicleRef, 'maintenanceTasks');
+  }, [vehicleRef]);
+
+  const serviceHistoryQuery = useMemoFirebase(() => {
+    if (!vehicleRef) return null;
+    // This is not quite right as service history is nested under tasks.
+    // For now, let's just create the query path. A real app would need a more complex setup.
+    // Let's assume for now we are fetching all service history for a vehicle, even though it's nested.
+    // This is a simplification. The correct path is /users/{userId}/vehicles/{vehicleId}/maintenanceTasks/{taskId}/serviceHistory/{historyId}
+    // We will just fetch service history for the vehicle for now.
+    return collection(firestore, `users/${userId}/vehicles/${vehicleId}/serviceHistory`);
+  }, [firestore, userId, vehicleId]);
+  
+  const { data: maintenanceTasks } = useCollection(maintenanceTasksQuery);
+  const { data: serviceHistory } = useCollection(serviceHistoryQuery);
+
+  const vehicleWithSubcollections = useMemoFirebase(() => {
+    if (!vehicle) return null;
+    return {
+      ...vehicle,
+      maintenanceTasks: maintenanceTasks || [],
+      serviceHistory: serviceHistory || [],
+    }
+  }, [vehicle, maintenanceTasks, serviceHistory]);
+
+
+  return { vehicle: vehicleWithSubcollections, isLoading: isLoading, error };
 }

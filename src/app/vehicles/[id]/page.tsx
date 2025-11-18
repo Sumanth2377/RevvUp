@@ -1,5 +1,7 @@
-import { notFound } from 'next/navigation';
-import { getVehicleById } from '@/lib/data';
+'use client';
+
+import { notFound, useRouter } from 'next/navigation';
+import { useVehicleById } from '@/lib/data';
 import {
   Card,
   CardContent,
@@ -14,16 +16,32 @@ import { MaintenanceList } from '@/components/maintenance-list';
 import { ServiceHistoryTable } from '@/components/service-history-table';
 import { VehicleAiScheduler } from '@/components/vehicle-ai-scheduler';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useUser } from '@/firebase';
+import Loading from '@/app/loading';
+import { useEffect } from 'react';
 
-export default async function VehicleDetailsPage({
+export default function VehicleDetailsPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const vehicle = await getVehicleById(params.id);
+  const { user, isUserLoading } = useUser();
+  const { vehicle, isLoading: isVehicleLoading } = useVehicleById(user?.uid, params.id);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+
+  if (isVehicleLoading || isUserLoading) {
+    return <Loading />;
+  }
 
   if (!vehicle) {
-    notFound();
+    return notFound();
   }
 
   return (
@@ -60,7 +78,7 @@ export default async function VehicleDetailsPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <MaintenanceList tasks={vehicle.maintenanceTasks} />
+              <MaintenanceList tasks={vehicle.maintenanceTasks || []} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -73,7 +91,7 @@ export default async function VehicleDetailsPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ServiceHistoryTable history={vehicle.serviceHistory} />
+              <ServiceHistoryTable history={vehicle.serviceHistory || []} />
             </CardContent>
           </Card>
         </TabsContent>
