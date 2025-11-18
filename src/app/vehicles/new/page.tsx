@@ -57,9 +57,9 @@ export default function AddVehiclePage() {
     defaultValues: {
       make: '',
       model: '',
-      year: undefined,
+      year: '' as any,
       licensePlate: '',
-      mileage: undefined,
+      mileage: '' as any,
     },
   });
 
