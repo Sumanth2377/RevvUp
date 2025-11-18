@@ -61,7 +61,7 @@ export default function LoginPage() {
             <Logo className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-2xl font-headline">
-            Welcome to Mech.io
+            Welcome to RevvUp
           </CardTitle>
           <CardDescription>
             Enter your email below to login to your account

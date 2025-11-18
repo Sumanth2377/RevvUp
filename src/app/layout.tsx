@@ -5,7 +5,7 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'Mech.io: Smart Vehicle Maintenance',
+  title: 'RevvUp: Smart Vehicle Maintenance',
   description:
     'Your intelligent partner for vehicle maintenance reminders and scheduling.',
 };

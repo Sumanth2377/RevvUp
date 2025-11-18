@@ -1,6 +1,6 @@
-# Mech.io: Smart Vehicle Maintenance
+# RevvUp: Smart Vehicle Maintenance
 
-Welcome to Mech.io! This is a Next.js application designed to help you manage your vehicle's maintenance schedule intelligently. It uses Firebase for backend services and Google's Generative AI (Genkit) to provide smart maintenance suggestions.
+Welcome to RevvUp! This is a Next.js application designed to help you manage your vehicle's maintenance schedule intelligently. It uses Firebase for backend services and Google's Generative AI (Genkit) to provide smart maintenance suggestions.
 
 This project was bootstrapped with [Firebase Studio](https://firebase.google.com/studio).
 
@@ -93,7 +93,7 @@ This will start the local development server. You'll see a message in your termi
 
 **http://localhost:9002**
 
-You should see the Mech.io application running!
+You should see the RevvUp application running!
 
 ## Firebase Integration
 

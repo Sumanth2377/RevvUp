@@ -1,5 +1,5 @@
 /**
- * @fileOverview Firestore Security Rules for Mech.io Application
+ * @fileOverview Firestore Security Rules for RevvUp Application
  *
  * Core Philosophy: This ruleset enforces a strict user-ownership model. Each user has complete control over their own data, including their profile, vehicles, maintenance tasks, service history, and notifications. No cross-user access is permitted except where explicitly defined.
  *
