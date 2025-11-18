@@ -4,9 +4,10 @@ import {
   suggestMaintenanceSchedule,
   type SuggestMaintenanceScheduleInput,
 } from '@/ai/flows/intelligent-maintenance-schedule';
+import { generateVehicleImage } from '@/ai/flows/vehicle-image-generator';
 import { z } from 'zod';
 
-const formSchema = z.object({
+const maintenanceSchema = z.object({
   vehicleMake: z.string(),
   vehicleModel: z.string(),
   vehicleYear: z.coerce.number(),
@@ -16,16 +17,16 @@ const formSchema = z.object({
   maintenanceHistory: z.string().optional(),
 });
 
-type FormState = {
+type MaintenanceFormState = {
   suggestedMaintenanceSchedule: string;
   error: string;
 };
 
 export async function suggestMaintenanceScheduleAction(
-  prevState: FormState,
+  prevState: MaintenanceFormState,
   formData: FormData
-): Promise<FormState> {
-  const parsed = formSchema.safeParse(Object.fromEntries(formData.entries()));
+): Promise<MaintenanceFormState> {
+  const parsed = maintenanceSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!parsed.success) {
     return {
@@ -48,4 +49,34 @@ export async function suggestMaintenanceScheduleAction(
       error: e.message || 'An unknown error occurred.',
     };
   }
+}
+
+
+const imageGenSchema = z.object({
+    make: z.string(),
+    model: z.string(),
+    year: z.coerce.number(),
+});
+
+type ImageGenState = {
+    imageUrl?: string;
+    imageHint?: string;
+    error?: string;
+}
+
+export async function generateVehicleImageAction(prevState: ImageGenState, formData: FormData) : Promise<ImageGenState> {
+    const parsed = imageGenSchema.safeParse(Object.fromEntries(formData.entries()));
+    if (!parsed.success) {
+        return { error: 'Invalid input for image generation.' };
+    }
+    
+    try {
+        const result = await generateVehicleImage(parsed.data);
+        return {
+            imageUrl: result.imageUrl,
+            imageHint: result.imageHint,
+        };
+    } catch(e: any) {
+        return { error: e.message || 'Failed to generate image.' };
+    }
 }

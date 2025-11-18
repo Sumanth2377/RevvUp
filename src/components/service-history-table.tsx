@@ -31,10 +31,10 @@ export function ServiceHistoryTable({ history }: { history: ServiceRecord[] }) {
         history.map(record => (
           <TableRow key={record.id}>
             <TableCell className="font-medium">
-              {format(parseISO(record.date), 'MMM d, yyyy')}
+              {format(parseISO(record.serviceDate), 'MMM d, yyyy')}
             </TableCell>
             <TableCell>
-              <div className="font-medium">{record.task}</div>
+              <div className="font-medium">{record.taskName}</div>
               <div className="text-sm text-muted-foreground">{record.notes}</div>
             </TableCell>
             <TableCell className="text-right">

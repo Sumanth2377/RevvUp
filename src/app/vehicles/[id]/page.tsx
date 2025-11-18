@@ -18,7 +18,8 @@ import { VehicleAiScheduler } from '@/components/vehicle-ai-scheduler';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser } from '@/firebase';
 import Loading from '@/app/loading';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { AddServiceDialog } from '@/components/add-service-dialog';
 
 export default function VehicleDetailsPage() {
   const params = useParams();
@@ -26,13 +27,13 @@ export default function VehicleDetailsPage() {
   const { user, isUserLoading } = useUser();
   const { vehicle, isLoading: isVehicleLoading } = useVehicleById(user?.uid, id);
   const router = useRouter();
+  const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
-
 
   if (isVehicleLoading || isUserLoading) {
     return <Loading />;
@@ -56,7 +57,7 @@ export default function VehicleDetailsPage() {
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>
-        <Button>
+        <Button onClick={() => setIsAddServiceOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add Service
         </Button>
@@ -97,6 +98,12 @@ export default function VehicleDetailsPage() {
           <VehicleAiScheduler vehicle={vehicle} />
         </TabsContent>
       </Tabs>
+      <AddServiceDialog 
+        isOpen={isAddServiceOpen}
+        onOpenChange={setIsAddServiceOpen}
+        vehicle={vehicle}
+        userId={user.uid}
+      />
     </>
   );
 }
