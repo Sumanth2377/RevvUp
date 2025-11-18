@@ -26,8 +26,8 @@ function getStatusVariant(status: 'ok' | 'due' | 'overdue'): 'default' | 'second
 
 
 export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
-    const overdueCount = vehicle.maintenanceTasks.filter(t => t.status === 'overdue').length;
-    const dueCount = vehicle.maintenanceTasks.filter(t => t.status === 'due').length;
+    const overdueCount = (vehicle.maintenanceTasks || []).filter(t => t.status === 'overdue').length;
+    const dueCount = (vehicle.maintenanceTasks || []).filter(t => t.status === 'due').length;
 
   return (
     <Card className="flex flex-col">
