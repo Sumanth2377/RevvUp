@@ -1,6 +1,6 @@
 'use client';
 
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import { useVehicleById } from '@/lib/data';
 import {
   Card,
@@ -20,13 +20,11 @@ import { useUser } from '@/firebase';
 import Loading from '@/app/loading';
 import { useEffect } from 'react';
 
-export default function VehicleDetailsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function VehicleDetailsPage() {
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { user, isUserLoading } = useUser();
-  const { vehicle, isLoading: isVehicleLoading } = useVehicleById(user?.uid, params.id);
+  const { vehicle, isLoading: isVehicleLoading } = useVehicleById(user?.uid, id);
   const router = useRouter();
 
   useEffect(() => {
