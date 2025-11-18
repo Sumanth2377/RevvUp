@@ -12,20 +12,45 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons';
-import { useAuth, initiateEmailSignIn } from '@/firebase';
-import { useState } from 'react';
+import { useAuth } from '@/firebase';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 export default function LoginPage() {
   const auth = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push('/');
+      }
+    });
+    return () => unsubscribe();
+  }, [auth, router]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    initiateEmailSignIn(auth, email, password);
-    router.push('/');
+    setError(null);
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Signed in 
+        router.push('/');
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found') {
+            setError('Invalid email or password. Please try again.');
+        } else {
+            setError(error.message);
+        }
+      });
   };
 
   return (
@@ -45,6 +70,13 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleLogin}>
             <div className="grid gap-4">
+            {error && (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Login Failed</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

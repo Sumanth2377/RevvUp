@@ -12,23 +12,54 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons';
-import { useAuth, initiateEmailSignUp } from '@/firebase';
+import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 export default function SignUpPage() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
-    initiateEmailSignUp(auth, email, password);
-    // Here you would typically also save the user's first and last name to Firestore
-    router.push('/');
+    setError(null);
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        const userRef = doc(firestore, 'users', user.uid);
+        const userData = {
+            id: user.uid,
+            email: user.email,
+            firstName,
+            lastName,
+            phone: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        setDocumentNonBlocking(userRef, userData, { merge: true });
+        router.push('/');
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        if (errorCode === 'auth/email-already-in-use') {
+            setError('This email address is already in use.');
+        } else if (errorCode === 'auth/weak-password') {
+            setError('The password is too weak. Please choose a stronger password.');
+        }
+        else {
+            setError(error.message);
+        }
+      });
   };
 
   return (
@@ -46,6 +77,13 @@ export default function SignUpPage() {
         <CardContent>
           <form onSubmit={handleSignUp}>
             <div className="grid gap-4">
+                {error && (
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Sign-up Failed</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="first-name">First name</Label>
