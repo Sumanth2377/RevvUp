@@ -5,85 +5,9 @@ import {
   useDoc,
   useFirestore,
   useMemoFirebase,
-  setDocumentNonBlocking,
 } from '@/firebase';
 import { collection, doc, query, onSnapshot, getDocs, orderBy } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { addMonths, formatISO } from 'date-fns';
-
-const defaultTasks = [
-    {
-        name: 'Oil Change',
-        description: 'Standard engine oil and filter change.',
-        intervalType: 'Time',
-        intervalValue: 6, // months
-        nextDueMileageInterval: 5000, // miles
-    },
-    {
-        name: 'Tire Rotation',
-        description: 'Rotate tires to ensure even wear.',
-        intervalType: 'Time',
-        intervalValue: 6, // months
-        nextDueMileageInterval: 7500, // miles
-    },
-    {
-        name: 'Brake Inspection',
-        description: 'Inspect brake pads, rotors, and fluid.',
-        intervalType: 'Time',
-        intervalValue: 12, // months
-        nextDueMileageInterval: 12000, // miles
-    },
-    {
-        name: 'Routine Inspection',
-        description: 'Check fluid levels, belts, hoses, and lights.',
-        intervalType: 'Time',
-        intervalValue: 3, // months
-        nextDueMileageInterval: 3000, // miles
-    },
-    {
-        name: 'Preventive Maintenance',
-        description: 'Scheduled services to prevent future issues.',
-        intervalType: 'Time',
-        intervalValue: 12, // months
-        nextDueMileageInterval: 15000, // miles
-    },
-    {
-        name: 'Repairs & Replacements',
-        description: 'Address any necessary repairs or part replacements.',
-        intervalType: 'Time',
-        intervalValue: 12, // months
-        nextDueMileageInterval: 0, // Ad-hoc
-    },
-    {
-        name: 'Safety Checks',
-        description: 'Inspect airbags, seatbelts, and other safety systems.',
-        intervalType: 'Time',
-        intervalValue: 24, // months
-        nextDueMileageInterval: 24000, // miles
-    },
-    {
-        name: 'System Updates',
-        description: 'Check for software or firmware updates for the vehicle systems.',
-        intervalType: 'Time',
-        intervalValue: 12, // months
-        nextDueMileageInterval: 0, // Not mileage dependent
-    },
-    {
-        name: 'Documentation',
-        description: 'Update service records, registration, or insurance.',
-        intervalType: 'Time',
-        intervalValue: 12,
-        nextDueMileageInterval: 0,
-    },
-    {
-        name: 'Emergency Tasks',
-        description: 'Tasks related to unforeseen events like flat tires or battery issues.',
-        intervalType: 'Time',
-        intervalValue: 12,
-        nextDueMileageInterval: 0,
-    },
-];
 
 export function useVehicles(userId?: string) {
   const firestore = useFirestore();
@@ -191,44 +115,6 @@ export function useVehicleDetails(userId?: string, baseVehicle?: Vehicle | null)
   const [areServicesLoading, setAreServicesLoading] = useState(true);
   const [servicesError, setServicesError] = useState<Error | null>(null);
 
-  // Effect to backfill default tasks for existing vehicles
-  useEffect(() => {
-    if (!firestore || !userId || !vehicleId || !maintenanceTasks || !baseVehicle || areTasksLoading) {
-      return;
-    }
-
-    const existingTaskNames = new Set(maintenanceTasks.map(t => t.name));
-    const missingTasks = defaultTasks.filter(dt => !existingTaskNames.has(dt.name));
-
-    if (missingTasks.length > 0) {
-      console.log(`Adding ${missingTasks.length} missing default tasks to vehicle ${vehicleId}`);
-      missingTasks.forEach(taskInfo => {
-        const taskId = uuidv4();
-        const taskRef = doc(firestore, `users/${userId}/vehicles/${vehicleId}/maintenanceTasks`, taskId);
-        const nextDueDate = addMonths(new Date(), taskInfo.intervalValue);
-
-        const newTask = {
-          id: taskId,
-          vehicleId: vehicleId,
-          name: taskInfo.name,
-          description: taskInfo.description,
-          intervalType: taskInfo.intervalType,
-          intervalValue: taskInfo.intervalValue,
-          lastPerformedDate: null,
-          lastPerformedMileage: null,
-          nextDueDate: formatISO(nextDueDate),
-          nextDueMileage: taskInfo.nextDueMileageInterval > 0 ? baseVehicle.mileage + taskInfo.nextDueMileageInterval : null,
-          status: 'due',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        // This will trigger the useCollection hook to update
-        setDocumentNonBlocking(taskRef, newTask, { merge: false });
-      });
-    }
-  }, [maintenanceTasks, areTasksLoading, firestore, userId, vehicleId, baseVehicle]);
-
-
   useEffect(() => {
     // We can't start fetching service history until we have tasks.
     if (!firestore || !userId || !vehicleId || maintenanceTasks === null) {
@@ -260,22 +146,22 @@ export function useVehicleDetails(userId?: string, baseVehicle?: Vehicle | null)
                     const thisTaskHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ServiceRecord));
                     return [...otherTasksHistory, ...thisTaskHistory];
                 });
+                // Once we get a snapshot for this task, we can set loading to false for it
+                setAreServicesLoading(false);
             },
             (error) => {
                 console.error(`Error fetching service history for task ${task.id}: `, error);
                 setServicesError(error);
+                setAreServicesLoading(false);
             }
         );
     });
     
-    // All listeners are attached, so we can consider this part of loading complete.
-    // The data will flow in via the snapshots.
-    setAreServicesLoading(false);
-    
+    // This effect should handle cleanup of all listeners.
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };
-  // Rerun when the list of tasks changes (e.g., after backfilling)
+  // Rerun when the list of tasks changes
   }, [maintenanceTasks, areTasksLoading, firestore, userId, vehicleId]);
 
 
@@ -284,9 +170,7 @@ export function useVehicleDetails(userId?: string, baseVehicle?: Vehicle | null)
       return null;
     }
 
-    // Only combine when tasks are loaded and not null.
-    // Service history can be empty initially.
-    if (maintenanceTasks === null) {
+    if (areTasksLoading || areServicesLoading) {
       return null;
     }
 
@@ -296,9 +180,9 @@ export function useVehicleDetails(userId?: string, baseVehicle?: Vehicle | null)
       // Sort history here to ensure consistent order
       serviceHistory: (serviceHistory || []).sort((a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime()),
     };
-  }, [baseVehicle, maintenanceTasks, serviceHistory]);
+  }, [baseVehicle, maintenanceTasks, serviceHistory, areTasksLoading, areServicesLoading]);
 
-  // Combined loading state. We are loading if tasks are loading or services are loading.
+  // Combined loading state. We are loading if the base vehicle, tasks, or services are loading.
   const isLoading = areTasksLoading || areServicesLoading;
   const isHistoryLoading = areServicesLoading;
   const error = tasksError || servicesError;

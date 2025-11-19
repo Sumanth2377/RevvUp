@@ -31,7 +31,6 @@ import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
-import { addMonths, formatISO } from 'date-fns';
 
 const vehicleSchema = z.object({
   make: z.string().min(1, 'Make is required'),
@@ -45,80 +44,6 @@ const vehicleSchema = z.object({
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
-
-// Default maintenance tasks to be added for a new vehicle
-const defaultTasks = [
-    {
-        name: 'Oil Change',
-        description: 'Standard engine oil and filter change.',
-        intervalType: 'Time',
-        intervalValue: 6, // months
-        nextDueMileageInterval: 5000, // miles
-    },
-    {
-        name: 'Tire Rotation',
-        description: 'Rotate tires to ensure even wear.',
-        intervalType: 'Time',
-        intervalValue: 6, // months
-        nextDueMileageInterval: 7500, // miles
-    },
-    {
-        name: 'Brake Inspection',
-        description: 'Inspect brake pads, rotors, and fluid.',
-        intervalType: 'Time',
-        intervalValue: 12, // months
-        nextDueMileageInterval: 12000, // miles
-    },
-    {
-        name: 'Routine Inspection',
-        description: 'Check fluid levels, belts, hoses, and lights.',
-        intervalType: 'Time',
-        intervalValue: 3, // months
-        nextDueMileageInterval: 3000, // miles
-    },
-    {
-        name: 'Preventive Maintenance',
-        description: 'Scheduled services to prevent future issues.',
-        intervalType: 'Time',
-        intervalValue: 12, // months
-        nextDueMileageInterval: 15000, // miles
-    },
-    {
-        name: 'Repairs & Replacements',
-        description: 'Address any necessary repairs or part replacements.',
-        intervalType: 'Time',
-        intervalValue: 12, // months
-        nextDueMileageInterval: 0, // Ad-hoc
-    },
-    {
-        name: 'Safety Checks',
-        description: 'Inspect airbags, seatbelts, and other safety systems.',
-        intervalType: 'Time',
-        intervalValue: 24, // months
-        nextDueMileageInterval: 24000, // miles
-    },
-    {
-        name: 'System Updates',
-        description: 'Check for software or firmware updates for the vehicle systems.',
-        intervalType: 'Time',
-        intervalValue: 12, // months
-        nextDueMileageInterval: 0, // Not mileage dependent
-    },
-    {
-        name: 'Documentation',
-        description: 'Update service records, registration, or insurance.',
-        intervalType: 'Time',
-        intervalValue: 12,
-        nextDueMileageInterval: 0,
-    },
-    {
-        name: 'Emergency Tasks',
-        description: 'Tasks related to unforeseen events like flat tires or battery issues.',
-        intervalType: 'Time',
-        intervalValue: 12,
-        nextDueMileageInterval: 0,
-    },
-];
 
 export default function AddVehiclePage() {
   const { user } = useUser();
@@ -175,34 +100,9 @@ export default function AddVehiclePage() {
       const vehicleRef = doc(vehiclesCollectionRef, vehicleId);
       setDocumentNonBlocking(vehicleRef, newVehicle, { merge: false });
 
-      // Add default maintenance tasks
-      defaultTasks.forEach(taskInfo => {
-          const taskId = uuidv4();
-          const taskRef = doc(firestore, `users/${user.uid}/vehicles/${vehicleId}/maintenanceTasks`, taskId);
-          const nextDueDate = addMonths(new Date(), taskInfo.intervalValue);
-
-          const newTask = {
-              id: taskId,
-              vehicleId: vehicleId,
-              name: taskInfo.name,
-              description: taskInfo.description,
-              intervalType: taskInfo.intervalType,
-              intervalValue: taskInfo.intervalValue,
-              lastPerformedDate: null,
-              lastPerformedMileage: null,
-              nextDueDate: formatISO(nextDueDate),
-              nextDueMileage: taskInfo.nextDueMileageInterval > 0 ? data.mileage + taskInfo.nextDueMileageInterval : null,
-              status: 'due',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-          };
-          setDocumentNonBlocking(taskRef, newTask, { merge: false });
-      });
-
-
       toast({
         title: 'Vehicle Added',
-        description: `${data.make} ${data.model} has been added with default maintenance tasks.`,
+        description: `${data.make} ${data.model} has been added.`,
       });
       router.push('/vehicles');
     } catch (error) {
