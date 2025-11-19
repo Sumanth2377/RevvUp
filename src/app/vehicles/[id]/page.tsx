@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Download, Wrench } from 'lucide-react';
+import { PlusCircle, Wrench } from 'lucide-react';
 import { MaintenanceList } from '@/components/maintenance-list';
 import { ServiceHistoryTable } from '@/components/service-history-table';
 import { VehicleAiScheduler } from '@/components/vehicle-ai-scheduler';
@@ -43,6 +43,8 @@ export default function VehicleDetailsPage() {
   }
 
   if (!vehicle) {
+    // If loading is finished and there's still no vehicle, it's a 404.
+    // This is the intended behavior after the useVehicleById hook is fixed.
     return notFound();
   }
 
@@ -101,18 +103,22 @@ export default function VehicleDetailsPage() {
           <VehicleAiScheduler vehicle={vehicle} />
         </TabsContent>
       </Tabs>
-      <AddServiceDialog 
-        isOpen={isAddServiceOpen}
-        onOpenChange={setIsAddServiceOpen}
-        vehicle={vehicle}
-        userId={user.uid}
-      />
-      <AddTaskDialog
-        isOpen={isAddTaskOpen}
-        onOpenChange={setIsAddTaskOpen}
-        vehicleId={vehicle.id}
-        userId={user.uid}
-      />
+      {user && (
+        <>
+          <AddServiceDialog 
+            isOpen={isAddServiceOpen}
+            onOpenChange={setIsAddServiceOpen}
+            vehicle={vehicle}
+            userId={user.uid}
+          />
+          <AddTaskDialog
+            isOpen={isAddTaskOpen}
+            onOpenChange={setIsAddTaskOpen}
+            vehicleId={vehicle.id}
+            userId={user.uid}
+          />
+        </>
+      )}
     </>
   );
 }
