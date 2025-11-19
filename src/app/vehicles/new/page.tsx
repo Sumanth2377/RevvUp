@@ -264,7 +264,7 @@ export default function AddVehiclePage() {
                     <div className="md:col-span-2">
                         <Label>Image Preview</Label>
                         <div className="mt-2 relative w-full h-48 rounded-lg overflow-hidden border">
-                            <Image src={imagePreview} alt="Vehicle preview" layout="fill" objectFit="cover" />
+                            <Image src={imagePreview} alt="Vehicle preview" fill objectFit="cover" />
                         </div>
                     </div>
                 )}
@@ -277,5 +277,3 @@ export default function AddVehiclePage() {
     </>
   );
 }
-
-    

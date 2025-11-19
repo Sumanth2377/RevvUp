@@ -29,11 +29,13 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'data',
+        hostname: '',
+        port: '',
+        pathname: '/**',
+      }
     ],
-    // Allow Data URLs for uploaded image previews
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 };
 
