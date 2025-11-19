@@ -1,8 +1,8 @@
 export type ServiceRecord = {
   id: string;
   maintenanceTaskId: string; 
-  serviceDate: string; // Changed from 'date' to 'serviceDate'
-  taskName: string; // Changed from 'task'
+  serviceDate: string;
+  taskName: string;
   notes: string;
 };
 
