@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -37,6 +38,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                 src={vehicle.imageUrl}
                 alt={`${vehicle.make} ${vehicle.model}`}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="rounded-t-lg object-cover"
                 data-ai-hint={vehicle.imageHint}
             />
@@ -68,3 +70,5 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
     </Card>
   );
 }
+
+    

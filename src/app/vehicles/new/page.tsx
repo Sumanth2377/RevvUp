@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -32,6 +33,8 @@ import { PageHeader } from '@/components/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import type { MaintenanceTask } from '@/lib/types';
+import { useState } from 'react';
+import Image from 'next/image';
 
 const vehicleSchema = z.object({
   make: z.string().min(1, 'Make is required'),
@@ -42,20 +45,21 @@ const vehicleSchema = z.object({
     .max(new Date().getFullYear() + 1, 'Invalid year'),
   licensePlate: z.string().min(1, 'License plate is required'),
   mileage: z.coerce.number().min(0, 'Mileage must be a positive number'),
+  imageUrl: z.string().optional(),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
 
 const defaultTasks: Omit<MaintenanceTask, 'id' | 'vehicleId' | 'createdAt' | 'updatedAt' >[] = [
-  { name: 'Preventive Maintenance', description: 'Scheduled services to prevent future issues.', intervalType: 'Time', intervalValue: 6, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
-  { name: 'Repairs & Replacements', description: 'Fixing or replacing broken parts.', intervalType: 'Time', intervalValue: 12, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
-  { name: 'Safety Checks', description: 'Inspections of safety-critical systems.', intervalType: 'Time', intervalValue: 12, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
-  { name: 'System Updates', description: 'Software or firmware updates.', intervalType: 'Time', intervalValue: 24, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
-  { name: 'Documentation', description: 'Logging important vehicle events or paperwork.', intervalType: 'Time', intervalValue: 0, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
-  { name: 'Emergency Tasks', description: 'Unforeseen urgent repairs.', intervalType: 'Time', intervalValue: 0, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
-  { name: 'Oil Change', description: 'Standard engine oil and filter change.', intervalType: 'Distance', intervalValue: 5000, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
-  { name: 'Tire Rotation', description: 'Rotating tires to ensure even wear.', intervalType: 'Distance', intervalValue: 7500, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
-  { name: 'Brake Inspection', description: 'Checking brake pads, rotors, and fluid.', intervalType: 'Time', intervalValue: 12, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+    { name: 'Oil Change', description: 'Standard engine oil and filter change.', intervalType: 'Distance', intervalValue: 5000, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+    { name: 'Tire Rotation', description: 'Rotating tires to ensure even wear.', intervalType: 'Distance', intervalValue: 7500, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+    { name: 'Brake Inspection', description: 'Checking brake pads, rotors, and fluid.', intervalType: 'Time', intervalValue: 12, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+    { name: 'Preventive Maintenance', description: 'Scheduled services to prevent future issues.', intervalType: 'Time', intervalValue: 6, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+    { name: 'Repairs & Replacements', description: 'Fixing or replacing broken parts.', intervalType: 'Time', intervalValue: 12, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+    { name: 'Safety Checks', description: 'Inspections of safety-critical systems.', intervalType: 'Time', intervalValue: 12, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+    { name: 'System Updates', description: 'Software or firmware updates.', intervalType: 'Time', intervalValue: 24, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+    { name: 'Documentation', description: 'Logging important vehicle events or paperwork.', intervalType: 'Time', intervalValue: 0, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+    { name: 'Emergency Tasks', description: 'Unforeseen urgent repairs.', intervalType: 'Time', intervalValue: 0, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
 ];
 
 export default function AddVehiclePage() {
@@ -63,6 +67,8 @@ export default function AddVehiclePage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
 
   const form = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
@@ -72,6 +78,7 @@ export default function AddVehiclePage() {
       year: undefined,
       licensePlate: '',
       mileage: 0,
+      imageUrl: '',
     },
   });
 
@@ -79,6 +86,20 @@ export default function AddVehiclePage() {
     if (!firestore || !user) return null;
     return collection(firestore, 'users', user.uid, 'vehicles');
   }, [firestore, user]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        form.setValue('imageUrl', result);
+        setImagePreview(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   async function onSubmit(data: VehicleFormValues) {
     if (!vehiclesCollectionRef || !user || !firestore) {
@@ -90,7 +111,7 @@ export default function AddVehiclePage() {
         return;
     }
 
-    const imageUrl = `https://picsum.photos/seed/${data.make}${data.model}/600/400`;
+    const imageUrl = data.imageUrl || `https://picsum.photos/seed/${data.make}${data.model}/600/400`;
     const imageHint = `${data.make} ${data.model}`.toLowerCase();
     
     const vehicleId = uuidv4();
@@ -226,6 +247,27 @@ export default function AddVehiclePage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vehicle Image</FormLabel>
+                      <FormControl>
+                        <Input type="file" accept="image/*" onChange={handleImageChange} className="pt-2" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {imagePreview && (
+                    <div className="md:col-span-2">
+                        <Label>Image Preview</Label>
+                        <div className="mt-2 relative w-full h-48 rounded-lg overflow-hidden border">
+                            <Image src={imagePreview} alt="Vehicle preview" layout="fill" objectFit="cover" />
+                        </div>
+                    </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -235,3 +277,5 @@ export default function AddVehiclePage() {
     </>
   );
 }
+
+    

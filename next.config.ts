@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -29,7 +30,13 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+    // Allow Data URLs for uploaded image previews
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 };
 
 export default nextConfig;
+
+    
