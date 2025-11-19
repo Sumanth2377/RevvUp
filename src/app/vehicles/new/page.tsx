@@ -31,8 +31,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
 import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
-import { Car } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const vehicleSchema = z.object({
   make: z.string().min(1, 'Make is required'),
@@ -70,24 +70,38 @@ export default function AddVehiclePage() {
   }, [firestore, user]);
 
   async function onSubmit(data: VehicleFormValues) {
-    if (!vehiclesCollectionRef || !user) return;
+    if (!vehiclesCollectionRef || !user) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'You must be logged in to add a vehicle.',
+        });
+        return;
+    }
 
-    // Use a placeholder image
     const imageUrl = `https://picsum.photos/seed/${data.make}${data.model}/600/400`;
     const imageHint = `${data.make} ${data.model}`.toLowerCase();
+    
+    // Create a deterministic ID or use Firestore's auto-ID. 
+    // Using a UUID here to ensure we can create the full object before sending.
+    const vehicleId = uuidv4();
 
     const newVehicle = {
-      ...data,
+      id: vehicleId,
       userId: user.uid,
+      make: data.make,
+      model: data.model,
+      year: data.year,
+      licensePlate: data.licensePlate,
+      mileage: data.mileage,
       imageUrl: imageUrl,
       imageHint: imageHint,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      maintenanceTasks: [],
-      serviceHistory: [],
     };
 
     try {
+      // We pass the full vehicle object to be added.
       addDocumentNonBlocking(vehiclesCollectionRef, newVehicle);
       toast({
         title: 'Vehicle Added',
