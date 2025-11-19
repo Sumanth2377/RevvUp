@@ -32,3 +32,12 @@ export type Vehicle = {
   maintenanceTasks: MaintenanceTask[];
   serviceHistory: ServiceRecord[];
 };
+
+export type Notification = {
+  id: string;
+  userId: string;
+  maintenanceTaskId: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+};

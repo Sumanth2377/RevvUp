@@ -1,0 +1,375 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the RevvUp application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "phone": {
+          "type": "string",
+          "description": "User's phone number."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName"
+      ]
+    },
+    "Vehicle": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Vehicle",
+      "type": "object",
+      "description": "Represents a vehicle owned by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the vehicle."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Vehicle)"
+        },
+        "make": {
+          "type": "string",
+          "description": "Vehicle make (e.g., Toyota)."
+        },
+        "model": {
+          "type": "string",
+          "description": "Vehicle model (e.g., Camry)."
+        },
+        "year": {
+          "type": "number",
+          "description": "Vehicle model year."
+        },
+        "licensePlate": {
+          "type": "string",
+          "description": "Vehicle license plate number."
+        },
+        "currentMileage": {
+          "type": "number",
+          "description": "Current mileage of the vehicle."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the vehicle was added.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of when the vehicle was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "make",
+        "model",
+        "year"
+      ]
+    },
+    "MaintenanceTask": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MaintenanceTask",
+      "type": "object",
+      "description": "Represents a maintenance task for a vehicle.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the maintenance task."
+        },
+        "vehicleId": {
+          "type": "string",
+          "description": "Reference to Vehicle. (Relationship: Vehicle 1:N MaintenanceTask)"
+        },
+        "taskName": {
+          "type": "string",
+          "description": "Name of the maintenance task (e.g., Oil Change)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the maintenance task."
+        },
+        "intervalType": {
+          "type": "string",
+          "description": "Interval type (e.g., Time, Distance)."
+        },
+        "intervalValue": {
+          "type": "number",
+          "description": "Interval value (e.g., 6 months, 5000 miles)."
+        },
+        "lastPerformedDate": {
+          "type": "string",
+          "description": "Date when the maintenance task was last performed.",
+          "format": "date-time"
+        },
+        "lastPerformedMileage": {
+          "type": "number",
+          "description": "Mileage when the maintenance task was last performed."
+        },
+        "nextDueDate": {
+          "type": "string",
+          "description": "Calculated next due date for the maintenance task.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the maintenance task was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of when the maintenance task was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "vehicleId",
+        "taskName",
+        "intervalType",
+        "intervalValue"
+      ]
+    },
+    "ServiceHistory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ServiceHistory",
+      "type": "object",
+      "description": "Represents the service history record for a maintenance task.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the service history record."
+        },
+        "maintenanceTaskId": {
+          "type": "string",
+          "description": "Reference to MaintenanceTask. (Relationship: MaintenanceTask 1:N ServiceHistory)"
+        },
+        "serviceDate": {
+          "type": "string",
+          "description": "Date when the service was performed.",
+          "format": "date-time"
+        },
+        "mileage": {
+          "type": "number",
+          "description": "Mileage at the time of service."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the service."
+        },
+        "receiptUrl": {
+          "type": "string",
+          "description": "URL to the service receipt.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the service history was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of when the service history was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "maintenanceTaskId",
+        "serviceDate",
+        "mileage"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification for a maintenance task.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the notification."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Notification)"
+        },
+        "maintenanceTaskId": {
+          "type": "string",
+          "description": "Reference to MaintenanceTask. (Relationship: MaintenanceTask 1:N Notification)"
+        },
+        "message": {
+            "type": "string",
+            "description": "The content of the notification message."
+        },
+        "isRead": {
+            "type": "boolean",
+            "description": "Whether the user has read the notification."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the notification was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "maintenanceTaskId",
+        "message",
+        "isRead",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data. The 'userId' is used for path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/vehicles/{vehicleId}",
+        "definition": {
+          "entityName": "Vehicle",
+          "schema": {
+            "$ref": "#/backend/entities/Vehicle"
+          },
+          "description": "Stores vehicle information for a specific user. The 'userId' and 'vehicleId' are used for path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "vehicleId",
+              "description": "The unique identifier of the vehicle."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/vehicles/{vehicleId}/maintenanceTasks/{taskId}",
+        "definition": {
+          "entityName": "MaintenanceTask",
+          "schema": {
+            "$ref": "#/backend/entities/MaintenanceTask"
+          },
+          "description": "Stores maintenance tasks for a specific vehicle. The 'userId', 'vehicleId', and 'taskId' are used for path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "vehicleId",
+              "description": "The unique identifier of the vehicle."
+            },
+            {
+              "name": "taskId",
+              "description": "The unique identifier of the maintenance task."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/vehicles/{vehicleId}/maintenanceTasks/{taskId}/serviceHistory/{historyId}",
+        "definition": {
+          "entityName": "ServiceHistory",
+          "schema": {
+            "$ref": "#/backend/entities/ServiceHistory"
+          },
+          "description": "Stores service history records for a specific maintenance task. The 'userId', 'vehicleId', 'taskId', and 'historyId' are used for path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "vehicleId",
+              "description": "The unique identifier of the vehicle."
+            },
+            {
+              "name": "taskId",
+              "description": "The unique identifier of the maintenance task."
+            },
+            {
+              "name": "historyId",
+              "description": "The unique identifier of the service history record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores notifications for a specific user. The 'userId' is used for path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "notificationId",
+              "description": "The unique identifier of the notification."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure is designed to support the RevvUp application, focusing on user-owned vehicle data and maintenance scheduling. The core principle is Authorization Independence, achieved through path-based ownership for private user data and denormalization where necessary. Here's a breakdown:\n\n*   **/users/{userId}**: Stores user profile data.  Vehicles, maintenance tasks, service history, and notifications are stored in subcollections under each user, ensuring clear ownership and simplifying security rules.  The `userId` is implicitly the document ID, ensuring uniqueness.\n*   **/users/{userId}/vehicles/{vehicleId}**: Stores vehicle details. All documents within this subcollection are owned by the `userId` specified in the path. Each vehicle document contains all the data needed for authorization, including the `userId`. This enables simple security rules that grant access based on `request.auth.uid == userId`.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceTasks/{taskId}**: Stores maintenance tasks associated with a specific vehicle. Authorization is based on the parent `vehicleId` and grandparent `userId`, inherited from the path.  This enforces that only the user owning the vehicle can manage its maintenance tasks.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceTasks/{taskId}/serviceHistory/{historyId}**: Stores the service history for each maintenance task. Authorization follows the same pattern as `maintenanceTasks`, ensuring that only the vehicle owner can access service history records.\n*   **/users/{userId}/notifications/{notificationId}**: Stores notifications for a user. Authorization is based on the `userId` in the path. This ensures that only the user can access their notifications.\n\nThis structure adheres to the core design principles:\n\n1.  **Authorization Independence:** Achieved through path-based ownership, eliminating the need for `get()` calls in security rules. Each subcollection inherently inherits authorization context from its parent path.\n2.  **Clarity of Intent:** The structure clearly reflects the ownership and relationships between entities.  User ownership is explicit in the path.\n3.  **DBAC (No Custom Claims):** Authorization relies solely on `request.auth.uid` and the path structure.\n4.  **QAPs:** Secure `list` operations are supported due to the homogeneous security posture of each collection. Rules can simply check `request.auth.uid == userId`.\n5.  **Invariants:** Ownership, timestamps, and denormalized data (if any) can be enforced through security rules that validate the data being written."
+  }
+}

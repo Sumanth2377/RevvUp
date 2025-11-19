@@ -32,7 +32,12 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { useNotifications } from '@/lib/data';
+import { NotificationList } from './notification-list';
+import { doc } from 'firebase/firestore';
+import type { Notification } from '@/lib/types';
+
 
 function NavLink({
   href,
@@ -135,8 +140,41 @@ function SidebarNav() {
   );
 }
 
+function NotificationBell() {
+    const { user } = useUser();
+    const firestore = useFirestore();
+    const { notifications } = useNotifications(user?.uid);
+    const unreadCount = (notifications || []).filter(n => !n.isRead).length;
+
+    const handleMarkAsRead = (notification: Notification) => {
+        if (!user) return;
+        const notifRef = doc(firestore, 'users', user.uid, 'notifications', notification.id);
+        setDocumentNonBlocking(notifRef, { isRead: true }, { merge: true });
+    };
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative rounded-full">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                        <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                            {unreadCount}
+                        </span>
+                    )}
+                    <span className="sr-only">Toggle notifications</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <NotificationList notifications={notifications || []} onMarkAsRead={handleMarkAsRead} />
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, isUserLoading } = useUser();
   const pathname = usePathname();
 
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
@@ -196,10 +234,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </form>
           </div>
-           <Button variant="ghost" size="icon" className="rounded-full">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Toggle notifications</span>
-          </Button>
+          <NotificationBell />
           <UserNav />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">

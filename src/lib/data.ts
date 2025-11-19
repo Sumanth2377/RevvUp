@@ -1,12 +1,12 @@
 'use client';
-import type { MaintenanceTask, ServiceRecord, Vehicle } from './types';
+import type { MaintenanceTask, ServiceRecord, Vehicle, Notification } from './types';
 import {
   useCollection,
   useDoc,
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, doc, query, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, doc, query, onSnapshot, getDocs, orderBy } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 
 export function useVehicles(userId?: string) {
@@ -168,8 +168,9 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
   const [combinedVehicle, setCombinedVehicle] = useState<Vehicle | null>(null);
 
   useEffect(() => {
-    // Only combine data once vehicle and tasks are loaded. Service history will stream in.
-    if (vehicleData && maintenanceTasks) {
+    if (isVehicleLoading || areTasksLoading || areServicesLoading) return;
+    
+    if (vehicleData) {
       setCombinedVehicle({
         ...vehicleData,
         maintenanceTasks: maintenanceTasks || [],
@@ -178,10 +179,25 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
     } else {
       setCombinedVehicle(null);
     }
-  }, [vehicleData, maintenanceTasks, serviceHistory]);
+  }, [vehicleData, maintenanceTasks, serviceHistory, isVehicleLoading, areTasksLoading, areServicesLoading]);
 
   const isLoading = isVehicleLoading || areTasksLoading || areServicesLoading;
   const error = vehicleError || tasksError || servicesError;
 
   return { vehicle: combinedVehicle, isLoading, error };
+}
+
+export function useNotifications(userId?: string) {
+  const firestore = useFirestore();
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!firestore || !userId) return null;
+    return query(
+      collection(firestore, 'users', userId, 'notifications'),
+      orderBy('createdAt', 'desc')
+    );
+  }, [firestore, userId]);
+
+  const { data: notifications, isLoading, error } = useCollection<Notification>(notificationsQuery);
+
+  return { notifications, isLoading, error };
 }
