@@ -104,6 +104,20 @@ const defaultTasks = [
         intervalValue: 12, // months
         nextDueMileageInterval: 0, // Not mileage dependent
     },
+    {
+        name: 'Documentation',
+        description: 'Update service records, registration, or insurance.',
+        intervalType: 'Time',
+        intervalValue: 12,
+        nextDueMileageInterval: 0,
+    },
+    {
+        name: 'Emergency Tasks',
+        description: 'Tasks related to unforeseen events like flat tires or battery issues.',
+        intervalType: 'Time',
+        intervalValue: 12,
+        nextDueMileageInterval: 0,
+    },
 ];
 
 export default function AddVehiclePage() {
