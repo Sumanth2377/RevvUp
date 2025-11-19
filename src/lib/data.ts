@@ -172,9 +172,9 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
     return { vehicle, isLoading: isVehicleLoading, error: vehicleError };
 }
 
-export function useVehicleDetails(userId?: string, vehicle?: Vehicle | null) {
+export function useVehicleDetails(userId?: string, baseVehicle?: Vehicle | null) {
   const firestore = useFirestore();
-  const vehicleId = vehicle?.id;
+  const vehicleId = baseVehicle?.id;
 
   const maintenanceTasksQuery = useMemoFirebase(() => {
     if (!firestore || !userId || !vehicleId) return null;
@@ -193,7 +193,7 @@ export function useVehicleDetails(userId?: string, vehicle?: Vehicle | null) {
 
   // Effect to backfill default tasks for existing vehicles
   useEffect(() => {
-    if (!firestore || !userId || !vehicleId || !maintenanceTasks || !vehicle || areTasksLoading) {
+    if (!firestore || !userId || !vehicleId || !maintenanceTasks || !baseVehicle || areTasksLoading) {
       return;
     }
 
@@ -217,7 +217,7 @@ export function useVehicleDetails(userId?: string, vehicle?: Vehicle | null) {
           lastPerformedDate: null,
           lastPerformedMileage: null,
           nextDueDate: formatISO(nextDueDate),
-          nextDueMileage: taskInfo.nextDueMileageInterval > 0 ? vehicle.mileage + taskInfo.nextDueMileageInterval : null,
+          nextDueMileage: taskInfo.nextDueMileageInterval > 0 ? baseVehicle.mileage + taskInfo.nextDueMileageInterval : null,
           status: 'due',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -226,12 +226,14 @@ export function useVehicleDetails(userId?: string, vehicle?: Vehicle | null) {
         setDocumentNonBlocking(taskRef, newTask, { merge: false });
       });
     }
-  }, [maintenanceTasks, areTasksLoading, firestore, userId, vehicleId, vehicle]);
+  }, [maintenanceTasks, areTasksLoading, firestore, userId, vehicleId, baseVehicle]);
 
 
   useEffect(() => {
-    if (!firestore || !userId || !vehicleId || !maintenanceTasks) {
-      if(!areTasksLoading) {
+    // We can't start fetching service history until we have tasks.
+    if (!firestore || !userId || !vehicleId || maintenanceTasks === null) {
+      // If tasks are finished loading and there are none, we can stop loading services.
+      if (!areTasksLoading && maintenanceTasks === null) {
         setAreServicesLoading(false);
       }
       return;
@@ -239,6 +241,7 @@ export function useVehicleDetails(userId?: string, vehicle?: Vehicle | null) {
 
     setAreServicesLoading(true);
     
+    // If there are no tasks, there's no history to fetch.
     if (maintenanceTasks.length === 0) {
       setServiceHistory([]);
       setAreServicesLoading(false);
@@ -252,46 +255,51 @@ export function useVehicleDetails(userId?: string, vehicle?: Vehicle | null) {
         return onSnapshot(historyQuery, 
             (snapshot) => {
                 setServiceHistory(prevHistory => {
+                    // Replace the history for this task with the new snapshot data
                     const otherTasksHistory = prevHistory.filter(h => h.maintenanceTaskId !== task.id);
                     const thisTaskHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ServiceRecord));
-                    return [...otherTasksHistory, ...thisTaskHistory].sort((a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime());
+                    return [...otherTasksHistory, ...thisTaskHistory];
                 });
-                // Since this is ongoing, we mark loading false once the listeners are attached.
-                // Subsequent updates will just flow in.
-                if (areServicesLoading) {
-                    setAreServicesLoading(false);
-                }
             },
             (error) => {
                 console.error(`Error fetching service history for task ${task.id}: `, error);
                 setServicesError(error);
-                setAreServicesLoading(false);
             }
         );
     });
     
+    // All listeners are attached, so we can consider this part of loading complete.
+    // The data will flow in via the snapshots.
+    setAreServicesLoading(false);
+    
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };
-  // We only want to re-run this when the set of tasks changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [maintenanceTasks, firestore, userId, vehicleId]);
+  // Rerun when the list of tasks changes (e.g., after backfilling)
+  }, [maintenanceTasks, areTasksLoading, firestore, userId, vehicleId]);
 
 
   const combinedVehicle = useMemo(() => {
-    if (!vehicle) {
+    if (!baseVehicle) {
+      return null;
+    }
+
+    // Only combine when tasks are loaded and not null.
+    // Service history can be empty initially.
+    if (maintenanceTasks === null) {
       return null;
     }
 
     return {
-      ...vehicle,
+      ...baseVehicle,
       maintenanceTasks: maintenanceTasks || [],
-      serviceHistory: serviceHistory || [],
+      // Sort history here to ensure consistent order
+      serviceHistory: (serviceHistory || []).sort((a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime()),
     };
-  }, [vehicle, maintenanceTasks, serviceHistory]);
+  }, [baseVehicle, maintenanceTasks, serviceHistory]);
 
-
-  const isLoading = areTasksLoading || (vehicle && maintenanceTasks === null);
+  // Combined loading state. We are loading if tasks are loading or services are loading.
+  const isLoading = areTasksLoading || areServicesLoading;
   const isHistoryLoading = areServicesLoading;
   const error = tasksError || servicesError;
 

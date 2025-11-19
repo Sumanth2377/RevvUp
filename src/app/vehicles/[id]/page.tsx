@@ -51,15 +51,10 @@ export default function VehicleDetailsPage() {
   }
 
   // If loading is finished and we still have no vehicle, then it's a 404
-  if (!isLoading && !detailedVehicle) {
+  if (!detailedVehicle) {
      return notFound();
   }
   
-  if (!detailedVehicle) {
-    // This case should be covered by the loading state, but as a fallback:
-    return <Loading />;
-  }
-
   return (
     <>
       <PageHeader
