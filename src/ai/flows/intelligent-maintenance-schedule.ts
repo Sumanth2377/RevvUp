@@ -38,7 +38,7 @@ const SuggestMaintenanceScheduleOutputSchema = z.object({
   suggestedMaintenanceSchedule: z
     .string()
     .describe(
-      'A detailed maintenance schedule, including specific tasks and intervals, tailored to the vehicle and driving conditions.'
+      'A detailed maintenance schedule, including specific tasks and intervals, tailored to the vehicle and driving conditions. The output should be a markdown formatted list.'
     ),
 });
 
@@ -66,7 +66,12 @@ Driving Style: {{{drivingStyle}}}
 Last Service Date: {{{lastServiceDate}}}
 Maintenance History: {{{maintenanceHistory}}}
 
-Based on this information, suggest an optimal maintenance schedule that considers both the vehicles usage patterns and manufacturer recommendations. Provide specific tasks and intervals.
+Based on this information, suggest an optimal maintenance schedule that considers both the vehicles usage patterns and manufacturer recommendations. 
+Provide specific tasks and intervals.
+Format the output as a concise, easy-to-read, point-by-point markdown list. For example:
+- **Oil Change:** Every 5,000 miles or 6 months.
+- **Tire Rotation:** Every 7,500 miles.
+- **Brake Inspection:** Every 15,000 miles.
 `,
 });
 

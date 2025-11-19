@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Download } from 'lucide-react';
+import { PlusCircle, Download, Wrench } from 'lucide-react';
 import { MaintenanceList } from '@/components/maintenance-list';
 import { ServiceHistoryTable } from '@/components/service-history-table';
 import { VehicleAiScheduler } from '@/components/vehicle-ai-scheduler';
@@ -20,6 +20,8 @@ import { useUser } from '@/firebase';
 import Loading from '@/app/loading';
 import { useEffect, useState } from 'react';
 import { AddServiceDialog } from '@/components/add-service-dialog';
+import { AddTaskDialog } from '@/components/add-task-dialog';
+
 
 export default function VehicleDetailsPage() {
   const params = useParams();
@@ -28,6 +30,7 @@ export default function VehicleDetailsPage() {
   const { vehicle, isLoading: isVehicleLoading } = useVehicleById(user?.uid, id);
   const router = useRouter();
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -50,12 +53,12 @@ export default function VehicleDetailsPage() {
         description={`${
           vehicle.year
         } · ${vehicle.mileage.toLocaleString()} miles · ${
-          vehicle.licensePlate
+          vehicle.licensePlate || ''
         }`}
       >
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Export
+        <Button variant="outline" onClick={() => setIsAddTaskOpen(true)}>
+            <Wrench className="mr-2 h-4 w-4" />
+            Add Custom Task
         </Button>
         <Button onClick={() => setIsAddServiceOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -102,6 +105,12 @@ export default function VehicleDetailsPage() {
         isOpen={isAddServiceOpen}
         onOpenChange={setIsAddServiceOpen}
         vehicle={vehicle}
+        userId={user.uid}
+      />
+      <AddTaskDialog
+        isOpen={isAddTaskOpen}
+        onOpenChange={setIsAddTaskOpen}
+        vehicleId={vehicle.id}
         userId={user.uid}
       />
     </>
