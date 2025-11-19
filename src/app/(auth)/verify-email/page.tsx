@@ -24,11 +24,18 @@ export default function VerifyEmailPage() {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (isUserLoading) {
+      return; // Wait until user status is resolved
+    }
     // If user is logged in and verified, redirect to dashboard
     if (user && user.emailVerified) {
       router.push('/');
     }
-  }, [user, router]);
+    // If user is not logged in, redirect to login page
+    if (!user) {
+        router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
 
   const handleResendVerification = async () => {
     if (user) {
@@ -53,15 +60,15 @@ export default function VerifyEmailPage() {
     router.push('/login');
   };
 
-  // While loading, or if user is unauthenticated (and not loading), don't show the page content
-  if (isUserLoading) {
+  // While loading, or if the user object is not yet available, show nothing.
+  // The useEffect handles the redirection logic.
+  if (isUserLoading || !user) {
     return null; // Or a loading spinner
   }
 
-  if (!user) {
-    // This can happen if the user navigates here directly without being logged in.
-    // Redirecting to login is a safe fallback.
-    router.push('/login');
+  // If the user is verified, they will be redirected by the useEffect. 
+  // We can return null here as well to avoid a flash of content.
+  if (user.emailVerified) {
     return null;
   }
 
