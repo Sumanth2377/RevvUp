@@ -68,7 +68,42 @@ const defaultTasks = [
         intervalType: 'Time',
         intervalValue: 12, // months
         nextDueMileageInterval: 12000, // miles
-    }
+    },
+    {
+        name: 'Routine Inspection',
+        description: 'Check fluid levels, belts, hoses, and lights.',
+        intervalType: 'Time',
+        intervalValue: 3, // months
+        nextDueMileageInterval: 3000, // miles
+    },
+    {
+        name: 'Preventive Maintenance',
+        description: 'Scheduled services to prevent future issues.',
+        intervalType: 'Time',
+        intervalValue: 12, // months
+        nextDueMileageInterval: 15000, // miles
+    },
+    {
+        name: 'Repairs & Replacements',
+        description: 'Address any necessary repairs or part replacements.',
+        intervalType: 'Time',
+        intervalValue: 12, // months
+        nextDueMileageInterval: 0, // Ad-hoc
+    },
+    {
+        name: 'Safety Checks',
+        description: 'Inspect airbags, seatbelts, and other safety systems.',
+        intervalType: 'Time',
+        intervalValue: 24, // months
+        nextDueMileageInterval: 24000, // miles
+    },
+    {
+        name: 'System Updates',
+        description: 'Check for software or firmware updates for the vehicle systems.',
+        intervalType: 'Time',
+        intervalValue: 12, // months
+        nextDueMileageInterval: 0, // Not mileage dependent
+    },
 ];
 
 export default function AddVehiclePage() {
@@ -142,7 +177,7 @@ export default function AddVehiclePage() {
               lastPerformedDate: null,
               lastPerformedMileage: null,
               nextDueDate: formatISO(nextDueDate),
-              nextDueMileage: data.mileage + taskInfo.nextDueMileageInterval,
+              nextDueMileage: taskInfo.nextDueMileageInterval > 0 ? data.mileage + taskInfo.nextDueMileageInterval : null,
               status: 'due',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
