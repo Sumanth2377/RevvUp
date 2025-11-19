@@ -5,12 +5,14 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  collection,
   CollectionReference,
   DocumentReference,
   SetOptions,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import {FirestorePermissionError} from '@/firebase/errors';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Initiates a setDoc operation for a document reference.
@@ -33,22 +35,28 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
 
 /**
  * Initiates an addDoc operation for a collection reference.
+ * This function will automatically generate a UUID for the document ID,
+ * add it to the data object, and then save it to Firestore.
  * Does NOT await the write operation internally.
- * Returns the Promise for the new doc ref, but typically not awaited by caller.
  */
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
-  const promise = addDoc(colRef, data)
-    .catch(error => {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
-          path: colRef.path,
-          operation: 'create',
-          requestResourceData: data,
-        })
-      )
-    });
-  return promise;
+  const docId = uuidv4();
+  const dataWithId = { ...data, id: docId };
+  const docRef = doc(colRef, docId);
+
+  // setDoc is used here instead of addDoc to ensure the ID is the one we generated.
+  setDoc(docRef, dataWithId).catch(error => {
+    errorEmitter.emit(
+      'permission-error',
+      new FirestorePermissionError({
+        path: colRef.path, // Path of the collection
+        operation: 'create',
+        requestResourceData: dataWithId,
+      })
+    )
+  });
+  // We can return the generated ID if needed, but the call remains non-blocking.
+  return docId;
 }
 
 

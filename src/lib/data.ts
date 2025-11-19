@@ -13,7 +13,7 @@ export function useVehicles(userId?: string) {
   const firestore = useFirestore();
   const vehiclesQuery = useMemoFirebase(() => {
     if (!firestore || !userId) return null;
-    return collection(firestore, 'users', userId, 'vehicles');
+    return query(collection(firestore, 'users', userId, 'vehicles'));
   }, [firestore, userId]);
 
   const {
@@ -43,18 +43,30 @@ export function useVehicles(userId?: string) {
     const fetchTasksForVehicles = async () => {
       if (!firestore || !userId) return;
       setIsTasksLoading(true);
-      const hydratedVehicles = await Promise.all(vehicles.map(async (v) => {
-        const tasksRef = collection(firestore, 'users', userId, 'vehicles', v.id, 'maintenanceTasks');
-        const tasksSnapshot = await getDocs(tasksRef);
-        const maintenanceTasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as MaintenanceTask[];
-        return {
-            ...v,
-            maintenanceTasks: maintenanceTasks || [],
-            serviceHistory: []
-        };
-      }));
-      setVehiclesWithTasks(hydratedVehicles);
-      setIsTasksLoading(false);
+      try {
+        const hydratedVehicles = await Promise.all(vehicles.map(async (v) => {
+          const tasksRef = collection(firestore, 'users', userId, 'vehicles', v.id, 'maintenanceTasks');
+          const tasksSnapshot = await getDocs(tasksRef);
+          const maintenanceTasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as MaintenanceTask[];
+          
+          // Simplified status logic for card view
+          const overdueCount = maintenanceTasks.filter(t => t.status === 'overdue').length;
+          const dueCount = maintenanceTasks.filter(t => t.status === 'due').length;
+
+          return {
+              ...v,
+              maintenanceTasks: maintenanceTasks || [],
+              serviceHistory: [], // Not needed for the main list view
+              overdueCount,
+              dueCount,
+          };
+        }));
+        setVehiclesWithTasks(hydratedVehicles);
+      } catch (error) {
+        console.error("Error fetching tasks for vehicles:", error);
+      } finally {
+        setIsTasksLoading(false);
+      }
     }
     fetchTasksForVehicles();
     
@@ -70,7 +82,6 @@ export function useVehicles(userId?: string) {
 export function useVehicleById(userId?: string, vehicleId?: string) {
   const firestore = useFirestore();
 
-  // 1. Fetch the main vehicle document
   const vehicleRef = useMemoFirebase(() => {
     if (!firestore || !userId || !vehicleId) return null;
     return doc(firestore, 'users', userId, 'vehicles', vehicleId);
@@ -82,7 +93,6 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
     error: vehicleError,
   } = useDoc<Omit<Vehicle, 'maintenanceTasks' | 'serviceHistory'>>(vehicleRef);
 
-  // 2. Fetch the maintenanceTasks subcollection
   const maintenanceTasksQuery = useMemoFirebase(() => {
     if (!vehicleRef) return null;
     return query(collection(vehicleRef, 'maintenanceTasks'));
@@ -94,97 +104,65 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
     error: tasksError,
   } = useCollection<MaintenanceTask>(maintenanceTasksQuery);
 
-  // 3. Fetch all service history records for all tasks
   const [serviceHistory, setServiceHistory] = useState<ServiceRecord[]>([]);
   const [areServicesLoading, setAreServicesLoading] = useState(true);
   const [servicesError, setServicesError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!firestore || !userId || !vehicleId || !maintenanceTasks) {
-        if(!areTasksLoading) {
-            setAreServicesLoading(false);
-        }
+      if(!areTasksLoading) {
+        setAreServicesLoading(false);
+      }
       return;
     }
+
     setAreServicesLoading(true);
     
-    // Unsubscribe functions for all listeners
-    const unsubscribers: (() => void)[] = [];
-    let allHistory: ServiceRecord[] = [];
-
     if (maintenanceTasks.length === 0) {
-        setServiceHistory([]);
-        setAreServicesLoading(false);
-        return;
+      setServiceHistory([]);
+      setAreServicesLoading(false);
+      return;
     }
 
-    maintenanceTasks.forEach(task => {
-      const historyQuery = query(
-        collection(
-          firestore,
-          `users/${userId}/vehicles/${vehicleId}/maintenanceTasks/${task.id}/serviceHistory`
-        )
-      );
-
-      const unsubscribe = onSnapshot(
-        historyQuery,
-        snapshot => {
-            snapshot.docChanges().forEach(change => {
-                const docData = { id: change.doc.id, ...change.doc.data() } as ServiceRecord;
-                const existingIndex = allHistory.findIndex(h => h.id === docData.id);
-
-                if (change.type === 'removed') {
-                    if (existingIndex > -1) {
-                        allHistory.splice(existingIndex, 1);
-                    }
-                } else { // added or modified
-                    if (existingIndex > -1) {
-                        allHistory[existingIndex] = docData;
-                    } else {
-                        allHistory.push(docData);
-                    }
-                }
-            });
-            // Update state with a new array to trigger re-render
-            setServiceHistory([...allHistory]);
-        },
-        error => {
-          console.error(`Error fetching service history for task ${task.id}: `, error);
-          setServicesError(error); // Set specific error
-        }
-      );
-      unsubscribers.push(unsubscribe);
+    const unsubscribers = maintenanceTasks.map(task => {
+        const historyQuery = query(
+            collection(firestore, `users/${userId}/vehicles/${vehicleId}/maintenanceTasks/${task.id}/serviceHistory`)
+        );
+        return onSnapshot(historyQuery, 
+            (snapshot) => {
+                setServiceHistory(prevHistory => {
+                    const otherTasksHistory = prevHistory.filter(h => h.maintenanceTaskId !== task.id);
+                    const thisTaskHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ServiceRecord));
+                    return [...otherTasksHistory, ...thisTaskHistory];
+                });
+            },
+            (error) => {
+                console.error(`Error fetching service history for task ${task.id}: `, error);
+                setServicesError(error);
+            }
+        );
     });
 
     setAreServicesLoading(false);
-
-    // Cleanup function to unsubscribe from all listeners on unmount
+    
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };
   }, [maintenanceTasks, areTasksLoading, firestore, userId, vehicleId]);
 
 
-  // 4. Combine all data into a final vehicle object
-  const [combinedVehicle, setCombinedVehicle] = useState<Vehicle | null>(null);
+  const combinedVehicle = useMemo(() => {
+    if (isVehicleLoading || areTasksLoading || areServicesLoading || !vehicleData) {
+      return null;
+    }
 
-  useEffect(() => {
-     // Wait until all data sources are no longer in their initial loading state.
-    if (isVehicleLoading || areTasksLoading || areServicesLoading) {
-        return;
-    }
-    
-    if (vehicleData) {
-      setCombinedVehicle({
-        ...vehicleData,
-        maintenanceTasks: maintenanceTasks || [],
-        serviceHistory: serviceHistory || [],
-      });
-    } else {
-      // If vehicleData is null after loading, it means the document doesn't exist.
-      setCombinedVehicle(null);
-    }
+    return {
+      ...vehicleData,
+      maintenanceTasks: maintenanceTasks || [],
+      serviceHistory: serviceHistory || [],
+    };
   }, [vehicleData, maintenanceTasks, serviceHistory, isVehicleLoading, areTasksLoading, areServicesLoading]);
+
 
   const isLoading = isVehicleLoading || areTasksLoading || areServicesLoading;
   const error = vehicleError || tasksError || servicesError;
