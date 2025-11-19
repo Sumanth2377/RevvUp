@@ -41,6 +41,7 @@ const vehicleSchema = z.object({
     .min(1900, 'Invalid year')
     .max(new Date().getFullYear() + 1, 'Invalid year'),
   licensePlate: z.string().min(1, 'License plate is required'),
+  mileage: z.coerce.number().min(0, 'Mileage must be a positive number'),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -58,6 +59,7 @@ export default function AddVehiclePage() {
       model: '',
       year: undefined,
       licensePlate: '',
+      mileage: 0,
     },
   });
 
@@ -90,7 +92,7 @@ export default function AddVehiclePage() {
       model: data.model,
       year: data.year,
       licensePlate: data.licensePlate,
-      mileage: 0,
+      mileage: data.mileage,
       imageUrl: imageUrl,
       imageHint: imageHint,
       createdAt: new Date().toISOString(),
@@ -179,6 +181,19 @@ export default function AddVehiclePage() {
                       <FormLabel>License Plate</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., ABC-1234" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mileage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Current Odometer Distance (in miles)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 25000" {...field} onChange={e => field.onChange(e.target.valueAsNumber || '')} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
