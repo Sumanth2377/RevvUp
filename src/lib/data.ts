@@ -7,7 +7,7 @@ import {
   useMemoFirebase,
 } from '@/firebase';
 import { collection, doc, query, onSnapshot, getDocs, orderBy } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 export function useVehicles(userId?: string) {
   const firestore = useFirestore();
@@ -143,6 +143,8 @@ export function useVehicleById(userId?: string, vehicleId?: string) {
         );
     });
 
+    // Set loading to false after setting up listeners.
+    // The individual listeners will update the state as data arrives.
     setAreServicesLoading(false);
     
     return () => {
