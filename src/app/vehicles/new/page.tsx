@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import type { MaintenanceTask } from '@/lib/types';
 
 const vehicleSchema = z.object({
   make: z.string().min(1, 'Make is required'),
@@ -44,6 +45,18 @@ const vehicleSchema = z.object({
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
+
+const defaultTasks: Omit<MaintenanceTask, 'id' | 'vehicleId' | 'createdAt' | 'updatedAt' >[] = [
+  { name: 'Preventive Maintenance', description: 'Scheduled services to prevent future issues.', intervalType: 'Time', intervalValue: 6, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+  { name: 'Repairs & Replacements', description: 'Fixing or replacing broken parts.', intervalType: 'Time', intervalValue: 12, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+  { name: 'Safety Checks', description: 'Inspections of safety-critical systems.', intervalType: 'Time', intervalValue: 12, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+  { name: 'System Updates', description: 'Software or firmware updates.', intervalType: 'Time', intervalValue: 24, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+  { name: 'Documentation', description: 'Logging important vehicle events or paperwork.', intervalType: 'Time', intervalValue: 0, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+  { name: 'Emergency Tasks', description: 'Unforeseen urgent repairs.', intervalType: 'Time', intervalValue: 0, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+  { name: 'Oil Change', description: 'Standard engine oil and filter change.', intervalType: 'Distance', intervalValue: 5000, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+  { name: 'Tire Rotation', description: 'Rotating tires to ensure even wear.', intervalType: 'Distance', intervalValue: 7500, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+  { name: 'Brake Inspection', description: 'Checking brake pads, rotors, and fluid.', intervalType: 'Time', intervalValue: 12, lastPerformedDate: null, lastPerformedMileage: null, nextDueDate: null, nextDueMileage: null, status: 'ok' },
+];
 
 export default function AddVehiclePage() {
   const { user } = useUser();
@@ -100,9 +113,25 @@ export default function AddVehiclePage() {
       const vehicleRef = doc(vehiclesCollectionRef, vehicleId);
       setDocumentNonBlocking(vehicleRef, newVehicle, { merge: false });
 
+      // Add default maintenance tasks
+      const tasksCollectionRef = collection(firestore, 'users', user.uid, 'vehicles', vehicleId, 'maintenanceTasks');
+      
+      for (const task of defaultTasks) {
+        const taskId = uuidv4();
+        const newTask: MaintenanceTask = {
+          ...task,
+          id: taskId,
+          vehicleId: vehicleId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        const taskRef = doc(tasksCollectionRef, taskId);
+        setDocumentNonBlocking(taskRef, newTask, { merge: false });
+      }
+
       toast({
         title: 'Vehicle Added',
-        description: `${data.make} ${data.model} has been added.`,
+        description: `${data.make} ${data.model} has been added with default maintenance tasks.`,
       });
       router.push('/vehicles');
     } catch (error) {

@@ -9,14 +9,18 @@ export type ServiceRecord = {
 
 export type MaintenanceTask = {
   id: string;
+  vehicleId: string;
   name: string;
-  intervalMonths: number | null;
-  intervalMiles: number | null;
+  description: string;
+  intervalType: 'Time' | 'Distance' | null;
+  intervalValue: number | null;
   status: 'ok' | 'due' | 'overdue';
   nextDueDate: string | null;
   nextDueMileage: number | null;
-  lastServiceDate: string;
-  lastServiceMileage: number;
+  lastPerformedDate: string | null;
+  lastPerformedMileage: number | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Vehicle = {
