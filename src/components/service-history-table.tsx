@@ -16,14 +16,13 @@ export function ServiceHistoryTable({ history }: { history: ServiceRecord[] }) {
         <TableRow>
           <TableHead>Date</TableHead>
           <TableHead>Task</TableHead>
-          <TableHead className="text-right">Mileage</TableHead>
           <TableHead className="text-right">Cost</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {history.length === 0 ? (
            <TableRow>
-            <TableCell colSpan={4} className="h-24 text-center">
+            <TableCell colSpan={3} className="h-24 text-center">
               No service history records found.
             </TableCell>
           </TableRow>
@@ -36,9 +35,6 @@ export function ServiceHistoryTable({ history }: { history: ServiceRecord[] }) {
             <TableCell>
               <div className="font-medium">{record.taskName}</div>
               <div className="text-sm text-muted-foreground">{record.notes}</div>
-            </TableCell>
-            <TableCell className="text-right">
-              {record.mileage.toLocaleString()} mi
             </TableCell>
             <TableCell className="text-right">
               ${record.cost.toFixed(2)}

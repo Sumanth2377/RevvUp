@@ -6,10 +6,10 @@ import { z } from 'zod';
 import {
   useUser,
   useFirestore,
-  addDocumentNonBlocking,
+  setDocumentNonBlocking,
   useMemoFirebase,
 } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
-
+import { addMonths, formatISO } from 'date-fns';
 
 const vehicleSchema = z.object({
   make: z.string().min(1, 'Make is required'),
@@ -45,6 +45,31 @@ const vehicleSchema = z.object({
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
+
+// Default maintenance tasks to be added for a new vehicle
+const defaultTasks = [
+    {
+        name: 'Oil Change',
+        description: 'Standard engine oil and filter change.',
+        intervalType: 'Time',
+        intervalValue: 6, // months
+        nextDueMileageInterval: 5000, // miles
+    },
+    {
+        name: 'Tire Rotation',
+        description: 'Rotate tires to ensure even wear.',
+        intervalType: 'Time',
+        intervalValue: 6, // months
+        nextDueMileageInterval: 7500, // miles
+    },
+    {
+        name: 'Brake Inspection',
+        description: 'Inspect brake pads, rotors, and fluid.',
+        intervalType: 'Time',
+        intervalValue: 12, // months
+        nextDueMileageInterval: 12000, // miles
+    }
+];
 
 export default function AddVehiclePage() {
   const { user } = useUser();
@@ -69,7 +94,7 @@ export default function AddVehiclePage() {
   }, [firestore, user]);
 
   async function onSubmit(data: VehicleFormValues) {
-    if (!vehiclesCollectionRef || !user) {
+    if (!vehiclesCollectionRef || !user || !firestore) {
         toast({
             variant: 'destructive',
             title: 'Error',
@@ -81,8 +106,6 @@ export default function AddVehiclePage() {
     const imageUrl = `https://picsum.photos/seed/${data.make}${data.model}/600/400`;
     const imageHint = `${data.make} ${data.model}`.toLowerCase();
     
-    // Create a deterministic ID or use Firestore's auto-ID. 
-    // Using a UUID here to ensure we can create the full object before sending.
     const vehicleId = uuidv4();
 
     const newVehicle = {
@@ -100,11 +123,37 @@ export default function AddVehiclePage() {
     };
 
     try {
-      // We pass the full vehicle object to be added.
-      addDocumentNonBlocking(vehiclesCollectionRef, newVehicle);
+      const vehicleRef = doc(vehiclesCollectionRef, vehicleId);
+      setDocumentNonBlocking(vehicleRef, newVehicle, { merge: false });
+
+      // Add default maintenance tasks
+      defaultTasks.forEach(taskInfo => {
+          const taskId = uuidv4();
+          const taskRef = doc(firestore, `users/${user.uid}/vehicles/${vehicleId}/maintenanceTasks`, taskId);
+          const nextDueDate = addMonths(new Date(), taskInfo.intervalValue);
+
+          const newTask = {
+              id: taskId,
+              vehicleId: vehicleId,
+              name: taskInfo.name,
+              description: taskInfo.description,
+              intervalType: taskInfo.intervalType,
+              intervalValue: taskInfo.intervalValue,
+              lastPerformedDate: null,
+              lastPerformedMileage: null,
+              nextDueDate: formatISO(nextDueDate),
+              nextDueMileage: data.mileage + taskInfo.nextDueMileageInterval,
+              status: 'due',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+          };
+          setDocumentNonBlocking(taskRef, newTask, { merge: false });
+      });
+
+
       toast({
         title: 'Vehicle Added',
-        description: `${data.make} ${data.model} has been added to your garage.`,
+        description: `${data.make} ${data.model} has been added with default maintenance tasks.`,
       });
       router.push('/vehicles');
     } catch (error) {

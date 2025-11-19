@@ -41,7 +41,6 @@ import { v4 as uuidv4 } from 'uuid';
 const serviceSchema = z.object({
   maintenanceTaskId: z.string().min(1, 'Please select a maintenance task.'),
   serviceDate: z.string().min(1, 'Service date is required.'),
-  mileage: z.coerce.number().min(1, 'Mileage is required.'),
   cost: z.coerce.number().min(0, 'Cost must be a positive number.').optional(),
   notes: z.string().optional(),
 });
@@ -69,7 +68,6 @@ export function AddServiceDialog({
     defaultValues: {
       maintenanceTaskId: '',
       serviceDate: new Date().toISOString().split('T')[0],
-      mileage: vehicle.mileage,
       cost: 0,
       notes: '',
     },
@@ -90,7 +88,6 @@ export function AddServiceDialog({
     const newServiceRecord = {
       maintenanceTaskId: selectedTask.id,
       serviceDate: data.serviceDate,
-      mileage: data.mileage,
       cost: data.cost || 0,
       notes: data.notes || '',
       taskName: selectedTask.name, // Denormalize for easier display
@@ -154,19 +151,6 @@ export function AddServiceDialog({
                   <FormLabel>Service Date</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="mileage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mileage</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
