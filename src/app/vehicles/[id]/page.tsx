@@ -27,7 +27,7 @@ export default function VehicleDetailsPage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { user, isUserLoading } = useUser();
-  const { vehicle, isLoading: isVehicleLoading } = useVehicleById(user?.uid, id);
+  const { vehicle, isLoading: isVehicleLoading, isHistoryLoading } = useVehicleById(user?.uid, id);
   const router = useRouter();
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
@@ -44,8 +44,10 @@ export default function VehicleDetailsPage() {
 
   if (!vehicle) {
     // If loading is finished and there's still no vehicle, it's a 404.
-    // This is the intended behavior after the useVehicleById hook is fixed.
-    return notFound();
+    if (!isVehicleLoading) {
+       return notFound();
+    }
+    return <Loading />;
   }
 
   return (
@@ -95,7 +97,7 @@ export default function VehicleDetailsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ServiceHistoryTable history={vehicle.serviceHistory || []} />
+              {isHistoryLoading ? <Loading /> : <ServiceHistoryTable history={vehicle.serviceHistory || []} />}
             </CardContent>
           </Card>
         </TabsContent>

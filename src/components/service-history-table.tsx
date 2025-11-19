@@ -10,31 +10,37 @@ import {
 import { format, parseISO } from 'date-fns';
 
 export function ServiceHistoryTable({ history }: { history: ServiceRecord[] }) {
+  // Sort history by date descending
+  const sortedHistory = history.sort((a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime());
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Date</TableHead>
           <TableHead>Task</TableHead>
+          <TableHead>Notes</TableHead>
           <TableHead className="text-right">Cost</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {history.length === 0 ? (
+        {sortedHistory.length === 0 ? (
            <TableRow>
-            <TableCell colSpan={3} className="h-24 text-center">
+            <TableCell colSpan={4} className="h-24 text-center">
               No service history records found.
             </TableCell>
           </TableRow>
         ) : (
-        history.map(record => (
+        sortedHistory.map(record => (
           <TableRow key={record.id}>
             <TableCell className="font-medium">
               {format(parseISO(record.serviceDate), 'MMM d, yyyy')}
             </TableCell>
             <TableCell>
               <div className="font-medium">{record.taskName}</div>
-              <div className="text-sm text-muted-foreground">{record.notes}</div>
+            </TableCell>
+             <TableCell>
+                {record.notes}
             </TableCell>
             <TableCell className="text-right">
               ${record.cost.toFixed(2)}
