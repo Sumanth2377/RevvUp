@@ -4,7 +4,6 @@ export type ServiceRecord = {
   serviceDate: string; // Changed from 'date' to 'serviceDate'
   taskName: string; // Changed from 'task'
   notes: string;
-  cost: number;
 };
 
 export type MaintenanceTask = {
