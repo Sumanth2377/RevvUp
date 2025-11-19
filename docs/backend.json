@@ -75,7 +75,7 @@
           "type": "string",
           "description": "Vehicle license plate number."
         },
-        "currentMileage": {
+        "mileage": {
           "type": "number",
           "description": "Current mileage of the vehicle."
         },
@@ -229,27 +229,17 @@
           "type": "string",
           "description": "Reference to MaintenanceTask. (Relationship: MaintenanceTask 1:N Notification)"
         },
-        "notificationType": {
-          "type": "string",
-          "description": "Type of notification (e.g., Email, SMS, Push)."
+        "message": {
+            "type": "string",
+            "description": "The content of the notification message."
         },
-        "sendDate": {
-          "type": "string",
-          "description": "Date when the notification should be sent.",
-          "format": "date-time"
-        },
-        "sentStatus": {
-          "type": "boolean",
-          "description": "Status of the notification (true if sent, false otherwise)."
+        "isRead": {
+            "type": "boolean",
+            "description": "Whether the user has read the notification."
         },
         "createdAt": {
           "type": "string",
           "description": "Timestamp of when the notification was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp of when the notification was last updated.",
           "format": "date-time"
         }
       },
@@ -257,8 +247,9 @@
         "id",
         "userId",
         "maintenanceTaskId",
-        "notificationType",
-        "sendDate"
+        "message",
+        "isRead",
+        "createdAt"
       ]
     }
   },

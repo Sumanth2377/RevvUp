@@ -22,7 +22,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -42,7 +41,6 @@ const vehicleSchema = z.object({
     .min(1900, 'Invalid year')
     .max(new Date().getFullYear() + 1, 'Invalid year'),
   licensePlate: z.string().min(1, 'License plate is required'),
-  mileage: z.coerce.number().min(0, 'Mileage must be a positive number'),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -60,7 +58,6 @@ export default function AddVehiclePage() {
       model: '',
       year: undefined,
       licensePlate: '',
-      mileage: undefined,
     },
   });
 
@@ -93,7 +90,7 @@ export default function AddVehiclePage() {
       model: data.model,
       year: data.year,
       licensePlate: data.licensePlate,
-      mileage: data.mileage,
+      mileage: 0,
       imageUrl: imageUrl,
       imageHint: imageHint,
       createdAt: new Date().toISOString(),
@@ -183,22 +180,6 @@ export default function AddVehiclePage() {
                       <FormControl>
                         <Input placeholder="e.g., ABC-1234" {...field} />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="mileage"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Current Mileage</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="e.g., 15000" {...field} onChange={e => field.onChange(e.target.valueAsNumber || '')} value={field.value ?? ''} />
-                      </FormControl>
-                      <FormDescription>
-                        Enter the current mileage on the odometer.
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
