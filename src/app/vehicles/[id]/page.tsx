@@ -1,7 +1,7 @@
 'use client';
 
 import { notFound, useRouter, useParams } from 'next/navigation';
-import { useVehicleById } from '@/lib/data';
+import { useVehicleById, useVehicleDetails } from '@/lib/data';
 import {
   Card,
   CardContent,
@@ -27,8 +27,14 @@ export default function VehicleDetailsPage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { user, isUserLoading } = useUser();
-  const { vehicle, isLoading: isVehicleLoading, isHistoryLoading } = useVehicleById(user?.uid, id);
   const router = useRouter();
+
+  // Step 1: Get the base vehicle data
+  const { vehicle: baseVehicle, isLoading: isVehicleLoading, error: vehicleError } = useVehicleById(user?.uid, id);
+
+  // Step 2: Get the detailed data (tasks, history) based on the base vehicle
+  const { vehicle: detailedVehicle, isLoading: isDetailsLoading, isHistoryLoading } = useVehicleDetails(user?.uid, baseVehicle);
+
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
@@ -38,26 +44,30 @@ export default function VehicleDetailsPage() {
     }
   }, [user, isUserLoading, router]);
 
-  if (isVehicleLoading || isUserLoading) {
+  const isLoading = isUserLoading || isVehicleLoading || isDetailsLoading;
+
+  if (isLoading) {
     return <Loading />;
   }
 
-  if (!vehicle) {
-    // If loading is finished and there's still no vehicle, it's a 404.
-    if (!isVehicleLoading) {
-       return notFound();
-    }
+  // If loading is finished and we still have no vehicle, then it's a 404
+  if (!isLoading && !detailedVehicle) {
+     return notFound();
+  }
+  
+  if (!detailedVehicle) {
+    // This case should be covered by the loading state, but as a fallback:
     return <Loading />;
   }
 
   return (
     <>
       <PageHeader
-        title={`${vehicle.make} ${vehicle.model}`}
+        title={`${detailedVehicle.make} ${detailedVehicle.model}`}
         description={`${
-          vehicle.year
-        } · ${vehicle.mileage.toLocaleString()} miles · ${
-          vehicle.licensePlate || ''
+          detailedVehicle.year
+        } · ${detailedVehicle.mileage.toLocaleString()} miles · ${
+          detailedVehicle.licensePlate || ''
         }`}
       >
         <Button variant="outline" onClick={() => setIsAddTaskOpen(true)}>
@@ -84,7 +94,7 @@ export default function VehicleDetailsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <MaintenanceList tasks={vehicle.maintenanceTasks || []} />
+              <MaintenanceList tasks={detailedVehicle.maintenanceTasks || []} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -97,12 +107,12 @@ export default function VehicleDetailsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isHistoryLoading ? <Loading /> : <ServiceHistoryTable history={vehicle.serviceHistory || []} />}
+              {isHistoryLoading ? <Loading /> : <ServiceHistoryTable history={detailedVehicle.serviceHistory || []} />}
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="ai">
-          <VehicleAiScheduler vehicle={vehicle} />
+          <VehicleAiScheduler vehicle={detailedVehicle} />
         </TabsContent>
       </Tabs>
       {user && (
@@ -110,13 +120,13 @@ export default function VehicleDetailsPage() {
           <AddServiceDialog 
             isOpen={isAddServiceOpen}
             onOpenChange={setIsAddServiceOpen}
-            vehicle={vehicle}
+            vehicle={detailedVehicle}
             userId={user.uid}
           />
           <AddTaskDialog
             isOpen={isAddTaskOpen}
             onOpenChange={setIsAddTaskOpen}
-            vehicleId={vehicle.id}
+            vehicleId={detailedVehicle.id}
             userId={user.uid}
           />
         </>
