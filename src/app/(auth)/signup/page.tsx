@@ -15,7 +15,7 @@ import { Logo } from '@/components/icons';
 import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
@@ -37,9 +37,6 @@ export default function SignUpPage() {
       .then(async (userCredential) => {
         const user = userCredential.user;
 
-        // Send verification email
-        await sendEmailVerification(user);
-
         const userRef = doc(firestore, 'users', user.uid);
         const userData = {
             id: user.uid,
@@ -51,7 +48,7 @@ export default function SignUpPage() {
             updatedAt: new Date().toISOString(),
         };
         setDocumentNonBlocking(userRef, userData, { merge: true });
-        router.push('/verify-email');
+        router.push('/');
       })
       .catch((error) => {
         const errorCode = error.code;

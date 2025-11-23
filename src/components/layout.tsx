@@ -177,7 +177,7 @@ function NotificationBell() {
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/verify-email');
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
 
   if (isAuthPage) {
     return <>{children}</>;
