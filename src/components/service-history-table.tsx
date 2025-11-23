@@ -39,7 +39,7 @@ export function ServiceHistoryTable({ history }: { history: ServiceRecord[] }) {
             <TableCell>
               <div className="font-medium">{record.taskName}</div>
             </TableCell>
-            <TableCell>{record.mileage.toLocaleString()} mi</TableCell>
+            <TableCell>{record.mileage ? `${record.mileage.toLocaleString()} mi` : 'N/A'}</TableCell>
              <TableCell>
                 {record.notes}
             </TableCell>
