@@ -1,5 +1,4 @@
 
-'use server';
 import * as admin from 'firebase-admin';
 
 // This file is intended for server-side use ONLY.
@@ -20,8 +19,6 @@ function initializeAdminApp() {
     ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
     : undefined;
 
-  // The 'undefined' case is for local development outside of Studio.
-  // In the Studio environment, serviceAccount will always be defined.
   return admin.initializeApp({
     credential: serviceAccount ? admin.credential.cert(serviceAccount) : undefined,
   });
