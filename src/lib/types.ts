@@ -2,6 +2,7 @@ export type ServiceRecord = {
   id: string;
   maintenanceTaskId: string; 
   serviceDate: string;
+  mileage: number;
   taskName: string;
   notes: string;
 };

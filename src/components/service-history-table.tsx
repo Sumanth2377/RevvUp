@@ -19,25 +19,27 @@ export function ServiceHistoryTable({ history }: { history: ServiceRecord[] }) {
         <TableRow>
           <TableHead>Date</TableHead>
           <TableHead>Task</TableHead>
+          <TableHead>Mileage</TableHead>
           <TableHead>Notes</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {sortedHistory.length === 0 ? (
            <TableRow>
-            <TableCell colSpan={3} className="h-24 text-center">
+            <TableCell colSpan={4} className="h-24 text-center">
               No service history records found.
             </TableCell>
           </TableRow>
         ) : (
         sortedHistory.map(record => (
           <TableRow key={record.id}>
-            <TableCell className="font-medium">
+            <TableCell className="font-medium whitespace-nowrap">
               {format(parseISO(record.serviceDate), 'MMM d, yyyy')}
             </TableCell>
             <TableCell>
               <div className="font-medium">{record.taskName}</div>
             </TableCell>
+            <TableCell>{record.mileage.toLocaleString()} mi</TableCell>
              <TableCell>
                 {record.notes}
             </TableCell>

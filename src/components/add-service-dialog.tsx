@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,15 +32,19 @@ import {
 import {
   addDocumentNonBlocking,
   useFirestore,
+  updateDocumentNonBlocking
 } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Vehicle } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import { updateMaintenanceTaskAction } from '@/lib/actions';
+import { Loader2 } from 'lucide-react';
 
 const serviceSchema = z.object({
   maintenanceTaskId: z.string().min(1, 'Please select a maintenance task.'),
   serviceDate: z.string().min(1, 'Service date is required.'),
+  mileage: z.coerce.number().min(0, 'Mileage must be a positive number.'),
   notes: z.string().optional(),
 });
 
@@ -61,12 +65,14 @@ export function AddServiceDialog({
 }: AddServiceDialogProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
     defaultValues: {
       maintenanceTaskId: '',
       serviceDate: new Date().toISOString().split('T')[0],
+      mileage: vehicle.mileage,
       notes: '',
     },
   });
@@ -77,6 +83,7 @@ export function AddServiceDialog({
     );
     if (!selectedTask || !firestore) return;
 
+    // 1. Add the service record to the history
     const serviceHistoryRef = collection(
       firestore,
       `users/${userId}/vehicles/${vehicle.id}/maintenanceTasks/${selectedTask.id}/serviceHistory`
@@ -86,6 +93,7 @@ export function AddServiceDialog({
       id: uuidv4(),
       maintenanceTaskId: selectedTask.id,
       serviceDate: data.serviceDate,
+      mileage: data.mileage,
       notes: data.notes || '',
       taskName: selectedTask.name, // Denormalize for easier display
       createdAt: new Date().toISOString(),
@@ -94,12 +102,32 @@ export function AddServiceDialog({
     
     addDocumentNonBlocking(serviceHistoryRef, newServiceRecord);
     
-    toast({
-        title: 'Service Added',
-        description: 'The new service record has been saved.',
+    // 2. Update the maintenance task status via a server action
+    startTransition(async () => {
+        const formData = new FormData();
+        formData.append('userId', userId);
+        formData.append('vehicleId', vehicle.id);
+        formData.append('taskId', selectedTask.id);
+        formData.append('serviceDate', data.serviceDate);
+        formData.append('mileage', String(data.mileage));
+        
+        const result = await updateMaintenanceTaskAction(formData);
+
+        if (result?.success) {
+             toast({
+                title: 'Service Added & Schedule Updated',
+                description: 'The service record has been saved and the maintenance schedule is updated.',
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error updating schedule',
+                description: result?.error || 'Could not update the maintenance schedule.',
+            });
+        }
+        onOpenChange(false);
+        form.reset();
     });
-    onOpenChange(false);
-    form.reset();
   };
 
   return (
@@ -155,6 +183,19 @@ export function AddServiceDialog({
             />
             <FormField
               control={form.control}
+              name="mileage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mileage at Service</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
@@ -167,8 +208,11 @@ export function AddServiceDialog({
               )}
             />
             <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button type="submit">Save Service</Button>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>Cancel</Button>
+                <Button type="submit" disabled={isPending}>
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Service
+                </Button>
             </DialogFooter>
           </form>
         </Form>
