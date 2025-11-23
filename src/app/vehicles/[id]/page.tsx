@@ -73,7 +73,7 @@ export default function VehicleDetailsPage() {
         description: `${detailedVehicle?.make} ${detailedVehicle?.model} has been removed.`,
     });
 
-    router.push('/vehicles');
+    router.push('/');
   }
 
   const isLoading = isUserLoading || isVehicleLoading || isDetailsLoading;
