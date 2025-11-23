@@ -1,6 +1,6 @@
 'use client';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,6 +16,8 @@ import { useState, useEffect } from 'react';
 import Loading from '../loading';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function SettingsPage() {
   const { user, isUserLoading } = useUser();
@@ -32,23 +34,42 @@ export default function SettingsPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (userProfile) {
       setFirstName(userProfile.firstName || '');
       setLastName(userProfile.lastName || '');
       setPhone(userProfile.phone || '');
+      setPhotoURL(userProfile.photoURL || null);
+      setImagePreview(userProfile.photoURL || null);
     }
   }, [userProfile]);
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setImagePreview(result);
+        setPhotoURL(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSave = async () => {
     if (userRef && user) {
         const userData = {
+            ...userProfile, // preserve existing data
             id: user.uid,
             email: user.email,
             firstName,
             lastName,
             phone,
+            photoURL: photoURL,
             updatedAt: new Date().toISOString(),
         };
       setDocumentNonBlocking(userRef, userData, { merge: true });
@@ -63,6 +84,8 @@ export default function SettingsPage() {
     return <Loading />;
   }
 
+  const userInitial = user?.email?.charAt(0).toUpperCase() || 'U';
+
   return (
     <>
       <PageHeader
@@ -76,7 +99,18 @@ export default function SettingsPage() {
             Update your personal information.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+            <div className="flex items-center gap-4">
+                <Avatar className="h-20 w-20">
+                    <AvatarImage src={imagePreview || ''} alt="User profile" />
+                    <AvatarFallback className="text-2xl">{userInitial}</AvatarFallback>
+                </Avatar>
+                <div className="space-y-2">
+                    <Label htmlFor="picture">Profile Picture</Label>
+                    <Input id="picture" type="file" accept="image/*" onChange={handleImageChange} />
+                    <p className="text-sm text-muted-foreground">Upload a new profile picture.</p>
+                </div>
+            </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>

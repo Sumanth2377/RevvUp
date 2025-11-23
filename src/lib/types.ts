@@ -43,3 +43,14 @@ export type Notification = {
   isRead: boolean;
   createdAt: string;
 };
+
+export type UserProfile = {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    photoURL?: string;
+    createdAt: string;
+    updatedAt: string;
+}

@@ -27,6 +27,11 @@
           "type": "string",
           "description": "User's phone number."
         },
+        "photoURL": {
+          "type": "string",
+          "description": "URL to the user's profile picture.",
+          "format": "uri"
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp of when the user account was created.",
@@ -75,7 +80,7 @@
           "type": "string",
           "description": "Vehicle license plate number."
         },
-        "currentMileage": {
+        "mileage": {
           "type": "number",
           "description": "Current mileage of the vehicle."
         },

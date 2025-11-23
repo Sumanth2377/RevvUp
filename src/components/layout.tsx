@@ -32,11 +32,11 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { useUser, useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { useUser, useAuth, useFirestore, setDocumentNonBlocking, useDoc, useMemoFirebase } from '@/firebase';
 import { useNotifications } from '@/lib/data';
 import { NotificationList } from './notification-list';
 import { doc } from 'firebase/firestore';
-import type { Notification } from '@/lib/types';
+import type { Notification, UserProfile } from '@/lib/types';
 
 
 function NavLink({
@@ -69,7 +69,15 @@ function NavLink({
 function UserNav() {
   const { user } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
+
+  const userRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userRef);
 
   const handleLogout = () => {
     auth.signOut();
@@ -83,21 +91,23 @@ function UserNav() {
         </Button>
     )
   }
+  
+  const userInitial = userProfile?.firstName?.charAt(0) || user.email?.charAt(0).toUpperCase() || 'U';
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`} alt={user.displayName || 'User'} />
-            <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarImage src={userProfile?.photoURL || ''} alt={userProfile?.firstName || 'User'} />
+            <AvatarFallback>{userInitial}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.displayName || 'User'}</p>
+            <p className="text-sm font-medium leading-none">{userProfile?.firstName ? `${userProfile.firstName} ${userProfile.lastName}` : 'User'}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
