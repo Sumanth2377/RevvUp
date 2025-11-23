@@ -1,5 +1,5 @@
 'use client';
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,14 +32,14 @@ import {
 import {
   addDocumentNonBlocking,
   useFirestore,
-  updateDocumentNonBlocking
+  updateDocumentNonBlocking,
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import type { Vehicle } from '@/lib/types';
+import type { Vehicle, MaintenanceTask } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
-import { updateMaintenanceTaskAction } from '@/lib/actions';
 import { Loader2 } from 'lucide-react';
+import { add, formatISO } from 'date-fns';
 
 const serviceSchema = z.object({
   maintenanceTaskId: z.string().min(1, 'Please select a maintenance task.'),
@@ -65,7 +65,7 @@ export function AddServiceDialog({
 }: AddServiceDialogProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
@@ -82,6 +82,8 @@ export function AddServiceDialog({
       (task) => task.id === data.maintenanceTaskId
     );
     if (!selectedTask || !firestore) return;
+
+    setIsPending(true);
 
     // 1. Add the service record to the history
     const serviceHistoryRef = collection(
@@ -101,33 +103,48 @@ export function AddServiceDialog({
     };
     
     addDocumentNonBlocking(serviceHistoryRef, newServiceRecord);
-    
-    // 2. Update the maintenance task status via a server action
-    startTransition(async () => {
-        const formData = new FormData();
-        formData.append('userId', userId);
-        formData.append('vehicleId', vehicle.id);
-        formData.append('taskId', selectedTask.id);
-        formData.append('serviceDate', data.serviceDate);
-        formData.append('mileage', String(data.mileage));
-        
-        const result = await updateMaintenanceTaskAction(formData);
 
-        if (result?.success) {
-             toast({
-                title: 'Service Added & Schedule Updated',
-                description: 'The service record has been saved and the maintenance schedule is updated.',
-            });
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error updating schedule',
-                description: result?.error || 'Could not update the maintenance schedule.',
-            });
-        }
-        onOpenChange(false);
-        form.reset();
+    // 2. Update the maintenance task status
+    let nextDueDate: string | null = null;
+    let nextDueMileage: number | null = null;
+    const newStatus: 'ok' | 'due' | 'overdue' = 'ok';
+
+    if (selectedTask.intervalType === 'Time' && selectedTask.intervalValue) {
+        const lastDate = new Date(data.serviceDate);
+        nextDueDate = formatISO(add(lastDate, { months: selectedTask.intervalValue }));
+    }
+
+    if (selectedTask.intervalType === 'Distance' && selectedTask.intervalValue) {
+        nextDueMileage = data.mileage + selectedTask.intervalValue;
+    }
+    
+    const taskRef = doc(firestore, `users/${userId}/vehicles/${vehicle.id}/maintenanceTasks/${selectedTask.id}`);
+    updateDocumentNonBlocking(taskRef, {
+        lastPerformedDate: data.serviceDate,
+        lastPerformedMileage: data.mileage,
+        nextDueDate,
+        nextDueMileage,
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
     });
+
+    // 3. Update vehicle's main mileage if this one is higher
+    if (data.mileage > vehicle.mileage) {
+        const vehicleRef = doc(firestore, `users/${userId}/vehicles/${vehicle.id}`);
+        updateDocumentNonBlocking(vehicleRef, {
+             mileage: data.mileage,
+             updatedAt: new Date().toISOString() 
+        });
+    }
+
+    toast({
+        title: 'Service Added & Schedule Updated',
+        description: 'The service record has been saved and the maintenance schedule is updated.',
+    });
+
+    setIsPending(false);
+    onOpenChange(false);
+    form.reset();
   };
 
   return (
