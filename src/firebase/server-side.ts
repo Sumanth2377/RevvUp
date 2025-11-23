@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import * as admin from 'firebase-admin';
 
 // This file is intended for server-side use ONLY.
