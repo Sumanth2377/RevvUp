@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { suggestMaintenanceScheduleAction } from '@/lib/actions';
 import type { Vehicle } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -43,7 +44,7 @@ export function VehicleAiScheduler({ vehicle }: { vehicle: Vehicle }) {
     error: '',
   };
 
-  const [state, formAction] = useFormState(
+  const [state, formAction] = useActionState(
     suggestMaintenanceScheduleAction,
     initialState
   );
