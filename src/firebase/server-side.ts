@@ -16,6 +16,8 @@ function initializeAdminApp() {
     : undefined;
 
   if (!serviceAccount) {
+    // This will not run in the Studio environment because the variable is always set.
+    // However, it's good practice for local development outside of Studio.
     throw new Error('Firebase service account credentials not found in environment variables.');
   }
 
@@ -24,7 +26,7 @@ function initializeAdminApp() {
   });
 }
 
-// Function to get the initialized Firebase services.
+// Function to get the initialized Firebase Admin services.
 export function getSdks() {
     const app = initializeAdminApp();
     return {
