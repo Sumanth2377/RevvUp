@@ -5,7 +5,6 @@ import {
   type SuggestMaintenanceScheduleInput,
 } from '@/ai/flows/intelligent-maintenance-schedule';
 import { z } from 'zod';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { getSdks } from '@/firebase/server-side';
 import type { MaintenanceTask, Vehicle } from './types';
 import { add, formatISO } from 'date-fns';
@@ -71,16 +70,16 @@ export async function updateMaintenanceTaskAction(formData: FormData) {
     const { userId, vehicleId, taskId, serviceDate, mileage } = parsed.data;
     const { firestore } = getSdks();
     
-    const taskRef = doc(firestore, 'users', userId, 'vehicles', vehicleId, 'maintenanceTasks', taskId);
-    const vehicleRef = doc(firestore, 'users', userId, 'vehicles', vehicleId);
+    const taskRef = firestore.doc(`users/${userId}/vehicles/${vehicleId}/maintenanceTasks/${taskId}`);
+    const vehicleRef = firestore.doc(`users/${userId}/vehicles/${vehicleId}`);
     
     try {
-        const [taskSnap, vehicleSnap] = await Promise.all([getDoc(taskRef), getDoc(vehicleRef)]);
+        const [taskSnap, vehicleSnap] = await Promise.all([taskRef.get(), vehicleRef.get()]);
         
-        if (!taskSnap.exists()) {
+        if (!taskSnap.exists) {
             throw new Error("Maintenance task not found.");
         }
-        if (!vehicleSnap.exists()) {
+        if (!vehicleSnap.exists) {
             throw new Error("Vehicle not found.");
         }
 
@@ -102,13 +101,13 @@ export async function updateMaintenanceTaskAction(formData: FormData) {
 
         // Update vehicle's main mileage if this one is higher
         if (mileage > vehicle.mileage) {
-            await updateDoc(vehicleRef, {
+            await vehicleRef.update({
                  mileage: mileage,
                  updatedAt: new Date().toISOString() 
             });
         }
         
-        await updateDoc(taskRef, {
+        await taskRef.update({
             lastPerformedDate: serviceDate,
             lastPerformedMileage: mileage,
             nextDueDate,
