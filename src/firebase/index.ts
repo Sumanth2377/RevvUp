@@ -10,10 +10,6 @@ import { firebaseConfig } from './config';
 export function initializeFirebase(): { firebaseApp: FirebaseApp; auth: Auth; firestore: Firestore; } {
   // If no apps are initialized, create a new one with our config.
   if (!getApps().length) {
-    // Check if the config keys are provided
-    if (!firebaseConfig.apiKey) {
-      throw new Error('Missing Firebase API Key. Please set NEXT_PUBLIC_FIREBASE_API_KEY in your .env.local file.');
-    }
     const firebaseApp = initializeApp(firebaseConfig);
     return getSdks(firebaseApp);
   }
