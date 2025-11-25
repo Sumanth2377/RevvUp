@@ -1,17 +1,25 @@
-
 'use client';
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import { firebaseConfig } from './config';
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
 
 // This function initializes and returns the Firebase app and its services.
 // It ensures that initialization only happens once.
 export function initializeFirebase(): { firebaseApp: FirebaseApp; auth: Auth; firestore: Firestore; } {
-  
   if (!firebaseConfig.apiKey) {
-      throw new Error('Missing Firebase API Key. Please set NEXT_PUBLIC_FIREBASE_API_KEY in your .env file.');
+      // This error is expected during the build process on Vercel,
+      // as environment variables are not available then.
+      // The client-side provider will handle re-initialization.
+      console.warn('Firebase API Key is missing. This is expected during server-side build.');
   }
 
   // If no apps are initialized, create a new one with our config.
@@ -24,16 +32,15 @@ export function initializeFirebase(): { firebaseApp: FirebaseApp; auth: Auth; fi
 }
 
 // Helper function to get the SDK services from a Firebase app instance.
-export function getSdks(firebaseApp: FirebaseApp) {
+function getSdks(firebaseApp: FirebaseApp) {
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp),
+    firestore: getFirestore(firebaseApp)
   };
 }
 
 export * from './provider';
-export * from './client-provider';
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';
 export * from './non-blocking-updates';

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { AppLayout } from '@/components/layout';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { FirebaseProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   title: 'RevvUp: Smart Vehicle Maintenance',
@@ -30,10 +30,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <FirebaseClientProvider>
+        <FirebaseProvider>
           <AppLayout>{children}</AppLayout>
           <Toaster />
-        </FirebaseClientProvider>
+        </FirebaseProvider>
       </body>
     </html>
   );

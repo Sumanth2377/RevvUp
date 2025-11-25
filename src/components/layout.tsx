@@ -186,6 +186,7 @@ function NotificationBell() {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, isUserLoading } = useUser();
 
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
 
@@ -244,8 +245,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </form>
           </div>
-          <NotificationBell />
-          <UserNav />
+          {!isUserLoading && user && <NotificationBell />}
+          {!isUserLoading && <UserNav />}
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
           {children}
