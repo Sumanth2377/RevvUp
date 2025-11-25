@@ -108,6 +108,17 @@ export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isUserLoadin
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
 
+  // This check ensures that components using Firebase services
+  // will not crash if the services are not yet available.
+  if (!context.areServicesAvailable) {
+    return {
+      areServicesAvailable: false,
+      firebaseApp: null,
+      firestore: null,
+      auth: null,
+    }
+  }
+
   return {
     areServicesAvailable: context.areServicesAvailable,
     firebaseApp: context.firebaseApp,

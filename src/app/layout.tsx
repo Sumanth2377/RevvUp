@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { AppLayout } from '@/components/layout';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
-import { FirebaseProvider } from '@/firebase';
+import { FirebaseProvider } from '@/firebase/provider';
 
 export const metadata: Metadata = {
   title: 'RevvUp: Smart Vehicle Maintenance',
