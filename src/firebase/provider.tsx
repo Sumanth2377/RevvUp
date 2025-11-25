@@ -31,12 +31,12 @@ interface FirebaseProviderProps {
 }
 
 interface FirebaseContextState {
-  areServicesAvailable: boolean;
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
   auth: Auth | null;
   user: User | null;
   isUserLoading: boolean;
+  areServicesAvailable: boolean;
 }
 
 // --- Hook Return Types ---
@@ -55,12 +55,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   children,
 }) => {
   const [firebaseState, setFirebaseState] = useState<FirebaseContextState>({
-    areServicesAvailable: false,
     firebaseApp: null,
     firestore: null,
     auth: null,
     user: null,
     isUserLoading: true,
+    areServicesAvailable: false,
   });
 
   useEffect(() => {
@@ -68,8 +68,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     if (typeof window !== 'undefined') {
       // Validate that the keys are present before initializing
       if (!firebaseConfig.apiKey) {
-        console.error("Firebase API Key is missing. Check your Vercel environment variables.");
-        setFirebaseState(s => ({...s, isUserLoading: false}));
+        console.error("Firebase API Key is missing. Check your environment variables.");
+        setFirebaseState(s => ({...s, isUserLoading: false, areServicesAvailable: false}));
         return;
       }
       
@@ -77,28 +77,22 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       const auth = getAuth(app);
       const firestore = getFirestore(app);
 
+      setFirebaseState(prevState => ({
+          ...prevState,
+          firebaseApp: app,
+          auth,
+          firestore,
+          areServicesAvailable: true,
+      }));
+
       const unsubscribe = onAuthStateChanged(
         auth,
         (user) => {
-          setFirebaseState({
-            areServicesAvailable: true,
-            firebaseApp: app,
-            auth: auth,
-            firestore: firestore,
-            user: user,
-            isUserLoading: false,
-          });
+          setFirebaseState(s => ({ ...s, user: user, isUserLoading: false }));
         },
         (error) => {
           console.error('Firebase Auth State Error:', error);
-          setFirebaseState({
-            areServicesAvailable: true,
-            firebaseApp: app,
-            auth: auth,
-            firestore: firestore,
-            user: null,
-            isUserLoading: false,
-          });
+          setFirebaseState(s => ({ ...s, user: null, isUserLoading: false }));
         }
       );
 
