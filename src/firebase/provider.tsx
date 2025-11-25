@@ -13,7 +13,16 @@ import { FirebaseApp, initializeApp, getApps } from 'firebase/app';
 import { Firestore, getFirestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged, getAuth } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
-import { firebaseConfig } from '@/firebase/config';
+
+// This is the public Firebase configuration for your project.
+// It is populated by environment variables and is safe to be included in client-side code.
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
 
 // --- Context & Provider State ---
 interface FirebaseProviderProps {
@@ -54,13 +63,13 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
-    // This check is now against the imported config object
+    // This check ensures that the environment variables are loaded before initializing.
     if (
       !firebaseConfig.apiKey ||
-      firebaseConfig.apiKey === 'your-api-key'
+      firebaseConfig.apiKey.includes('your-api-key')
     ) {
       console.error(
-        'Firebase API Key is missing or is a placeholder in src/firebase/config.ts. Please update it with your actual Firebase project credentials.'
+        'Firebase configuration is missing or invalid. Please ensure your NEXT_PUBLIC_FIREBASE_* environment variables are set correctly.'
       );
       setFirebaseState(s => ({...s, isUserLoading: false, areServicesAvailable: false}));
       return;
@@ -107,9 +116,7 @@ export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isUserLoadin
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
-
-  // This check ensures that components using Firebase services
-  // will not crash if the services are not yet available.
+  
   if (!context.areServicesAvailable) {
     return {
       areServicesAvailable: false,
