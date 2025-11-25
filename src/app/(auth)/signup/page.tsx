@@ -33,6 +33,12 @@ export default function SignUpPage() {
   const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!auth || !firestore) {
+      setError('Authentication service is not ready. Please try again in a moment.');
+      return;
+    }
+
     createUserWithEmailAndPassword(auth, email, password)
       .then(async (userCredential) => {
         const user = userCredential.user;
