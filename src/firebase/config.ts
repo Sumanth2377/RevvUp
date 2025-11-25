@@ -1,4 +1,3 @@
-'use client';
 
 // This configuration object is constructed from environment variables.
 // It's crucial that NEXT_PUBLIC_FIREBASE_* variables are set in your environment

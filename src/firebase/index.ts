@@ -1,3 +1,4 @@
+
 'use client';
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
@@ -8,6 +9,11 @@ import { firebaseConfig } from './config';
 // This function initializes and returns the Firebase app and its services.
 // It ensures that initialization only happens once.
 export function initializeFirebase(): { firebaseApp: FirebaseApp; auth: Auth; firestore: Firestore; } {
+  
+  if (!firebaseConfig.apiKey) {
+      throw new Error('Missing Firebase API Key. Please set NEXT_PUBLIC_FIREBASE_API_KEY in your .env file.');
+  }
+
   // If no apps are initialized, create a new one with our config.
   if (!getApps().length) {
     const firebaseApp = initializeApp(firebaseConfig);
