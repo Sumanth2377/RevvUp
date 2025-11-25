@@ -15,16 +15,12 @@ import { Auth, User, onAuthStateChanged, getAuth } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 // --- Configuration ---
-// This is the standard way to use environment variables in Next.js.
-// Vercel will automatically substitute these process.env variables
-// with the values you set in your project's Environment Variables settings.
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
-
 
 // --- Context & Provider State ---
 interface FirebaseProviderProps {
@@ -65,38 +61,44 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!firebaseConfig.apiKey) {
-        console.error("Firebase API Key is missing. Check your environment variables.");
-        setFirebaseState(s => ({...s, isUserLoading: false, areServicesAvailable: false}));
-        return;
-      }
-      
-      const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const firestore = getFirestore(app);
-
-      setFirebaseState(prevState => ({
-          ...prevState,
-          firebaseApp: app,
-          auth,
-          firestore,
-          areServicesAvailable: true,
-      }));
-
-      const unsubscribe = onAuthStateChanged(
-        auth,
-        (user) => {
-          setFirebaseState(s => ({ ...s, user: user, isUserLoading: false }));
-        },
-        (error) => {
-          console.error('Firebase Auth State Error:', error);
-          setFirebaseState(s => ({ ...s, user: null, isUserLoading: false }));
-        }
+    // Validate the Firebase config
+    if (
+      !firebaseConfig.apiKey ||
+      firebaseConfig.apiKey === 'your-api-key'
+    ) {
+      console.error(
+        'Firebase API Key is missing or is a placeholder. Please set NEXT_PUBLIC_FIREBASE_API_KEY in your environment.'
       );
-
-      return () => unsubscribe();
+      // We stop initialization but don't throw, to avoid crashing the server build.
+      // The app will show a disconnected state.
+       setFirebaseState(s => ({...s, isUserLoading: false, areServicesAvailable: false}));
+      return;
     }
+    
+    const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const firestore = getFirestore(app);
+
+    setFirebaseState(prevState => ({
+        ...prevState,
+        firebaseApp: app,
+        auth,
+        firestore,
+        areServicesAvailable: true,
+    }));
+
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        setFirebaseState(s => ({ ...s, user: user, isUserLoading: false }));
+      },
+      (error) => {
+        console.error('Firebase Auth State Error:', error);
+        setFirebaseState(s => ({ ...s, user: null, isUserLoading: false }));
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -115,8 +117,6 @@ export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isUserLoadin
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
   
-  // This check ensures that components trying to use Firebase services
-  // will get null until the services are ready, preventing crashes.
   if (!context.areServicesAvailable) {
     return {
       areServicesAvailable: false,
