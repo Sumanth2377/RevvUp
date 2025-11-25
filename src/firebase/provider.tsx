@@ -15,12 +15,14 @@ import { Auth, User, onAuthStateChanged, getAuth } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 // --- Configuration ---
+// This is the only place where Firebase config is defined.
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
+
 
 // --- Context & Provider State ---
 interface FirebaseProviderProps {
@@ -69,9 +71,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       console.error(
         'Firebase API Key is missing or is a placeholder. Please set NEXT_PUBLIC_FIREBASE_API_KEY in your environment.'
       );
-      // We stop initialization but don't throw, to avoid crashing the server build.
-      // The app will show a disconnected state.
-       setFirebaseState(s => ({...s, isUserLoading: false, areServicesAvailable: false}));
+      setFirebaseState(s => ({...s, isUserLoading: false, areServicesAvailable: false}));
       return;
     }
     
