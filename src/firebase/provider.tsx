@@ -13,16 +13,7 @@ import { FirebaseApp, initializeApp, getApps } from 'firebase/app';
 import { Firestore, getFirestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged, getAuth } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
-
-// --- Configuration ---
-// This is the only place where Firebase config is defined.
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
+import { firebaseConfig } from '@/firebase/config';
 
 // --- Context & Provider State ---
 interface FirebaseProviderProps {
@@ -63,13 +54,13 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
-    // Validate the Firebase config
+    // This check is now against the imported config object
     if (
       !firebaseConfig.apiKey ||
       firebaseConfig.apiKey === 'your-api-key'
     ) {
       console.error(
-        'Firebase API Key is missing or is a placeholder. Please set NEXT_PUBLIC_FIREBASE_API_KEY in your environment.'
+        'Firebase API Key is missing or is a placeholder in src/firebase/config.ts. Please update it with your actual Firebase project credentials.'
       );
       setFirebaseState(s => ({...s, isUserLoading: false, areServicesAvailable: false}));
       return;
@@ -116,16 +107,6 @@ export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isUserLoadin
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
-  
-  if (!context.areServicesAvailable) {
-    return {
-      areServicesAvailable: false,
-      firebaseApp: null,
-      firestore: null,
-      auth: null,
-    };
-  }
-
 
   return {
     areServicesAvailable: context.areServicesAvailable,
