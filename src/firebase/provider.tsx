@@ -25,6 +25,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+
 // --- Context & Provider State ---
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -64,9 +65,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
-    // This check is crucial. It ensures Firebase only initializes on the client-side.
     if (typeof window !== 'undefined') {
-      // Validate that the keys are present before initializing
       if (!firebaseConfig.apiKey) {
         console.error("Firebase API Key is missing. Check your environment variables.");
         setFirebaseState(s => ({...s, isUserLoading: false, areServicesAvailable: false}));
@@ -115,6 +114,18 @@ export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isUserLoadin
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
+  
+  // This check ensures that components trying to use Firebase services
+  // will get null until the services are ready, preventing crashes.
+  if (!context.areServicesAvailable) {
+    return {
+      areServicesAvailable: false,
+      firebaseApp: null,
+      firestore: null,
+      auth: null,
+    };
+  }
+
 
   return {
     areServicesAvailable: context.areServicesAvailable,
