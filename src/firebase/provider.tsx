@@ -17,10 +17,12 @@ import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 // This is the public Firebase configuration for your project.
 // It is populated by environment variables and is safe to be included in client-side code.
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "your-api-key",
+  authDomain: "your-auth-domain",
+  projectId: "your-project-id",
+  storageBucket: "your-storage-bucket",
+  messagingSenderId: "your-messaging-sender-id",
+  appId: "your-app-id"
 };
 
 
@@ -69,7 +71,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       firebaseConfig.apiKey.includes('your-api-key')
     ) {
       console.error(
-        'Firebase configuration is missing or invalid. Please ensure your NEXT_PUBLIC_FIREBASE_* environment variables are set correctly.'
+        'Firebase API Key is missing or is a placeholder in src/firebase/config.ts. Please update it with your actual Firebase project credentials.'
       );
       setFirebaseState(s => ({...s, isUserLoading: false, areServicesAvailable: false}));
       return;
